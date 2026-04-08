@@ -236,7 +236,7 @@
                         </div>
                     </div>
 
-                    <div class="section-footer flex flex-col justify-center items-center" style="padding:0 2vh;">
+                    <div class="section-footer flex flex-col justify-end items-center" style="padding:0 2vh 1vh;">
                         <!-- Show Result (last Q only) -->
                         <template x-if="currentQuestion === questions.length - 1 && answers[currentQuestion]">
                             <div style="margin-bottom:1.5vh;">
@@ -248,7 +248,7 @@
                                 </button>
                             </div>
                         </template>
-                        <!-- Nav buttons -->
+                        <!-- Nav buttons - stuck to bottom -->
                         <div class="flex justify-between items-center w-full">
                             <button @click="prevQuestion()" class="flex items-center justify-center transition-all active:scale-95" style="width:6vh;height:6vh;border-radius:50%;background:#D4622B;">
                                 <span class="material-symbols-rounded text-white" style="font-size:2.5vh;">arrow_forward</span>

@@ -4,8 +4,7 @@
 
 // FAL.AI Configuration
 const FAL_AI_API_KEY = 'e299769e-3103-43e6-ae21-bcd1b4fb8283:dac09f32773e0be9b2b1d4c1d51def91';
-const FAL_AI_ENDPOINT = 'https://queue.fal.run/fal-ai/flux-2-pro/edit';
-const FAL_AI_STATUS_BASE = 'https://queue.fal.run/fal-ai/flux-2-pro/edit/requests';
+const FAL_AI_ENDPOINT = 'https://fal.run/fal-ai/flux-2-pro/edit';
 
 // =============================================
 // Sound Effects (Web Audio API)
@@ -250,78 +249,51 @@ function bosalatiApp() {
             const promptParts = this.gender === 'female' ? career.ai_prompt_female : career.ai_prompt_male;
             const fullPrompt = `maintain the person's exact height, pose, face, beard, glasses, hair, skin tone, headwear. If wearing hijab or headscarf, keep it exactly as is. ONLY change clothing to match this career outfit: ${promptParts}. Change background to: ${career.ai_background}. Keep everything else about the person identical.`;
 
+            // Simulate progress while waiting for sync API
+            let fakeProgress = 10;
+            this._processingInterval = setInterval(() => {
+                fakeProgress = Math.min(85, fakeProgress + 3);
+                this.processingProgress = fakeProgress;
+            }, 2000);
+
             try {
-                const submitRes = await fetch(FAL_AI_ENDPOINT, {
+                // Sync call matching the original Laravel backend exactly
+                const response = await fetch(FAL_AI_ENDPOINT, {
                     method: 'POST',
-                    headers: { 'Authorization': 'Key ' + FAL_AI_API_KEY, 'Content-Type': 'application/json' },
+                    headers: {
+                        'Authorization': 'Key ' + FAL_AI_API_KEY,
+                        'Content-Type': 'application/json'
+                    },
                     body: JSON.stringify({
-                        image_url: this.capturedPhoto,
+                        image_urls: [this.capturedPhoto],
                         prompt: fullPrompt,
-                        image_size: { width: 768, height: 1024 },
-                        num_images: 1,
-                        safety_tolerance: 6
+                        aspect_ratio: '3:4'
                     })
                 });
 
-                if (!submitRes.ok) {
-                    const errData = await submitRes.json().catch(() => ({}));
-                    throw new Error(errData.detail || errData.message || 'API request failed: ' + submitRes.status);
+                clearInterval(this._processingInterval);
+
+                if (!response.ok) {
+                    const errData = await response.json().catch(() => ({}));
+                    throw new Error(errData.detail || errData.message || 'API request failed: ' + response.status);
                 }
 
-                const submitData = await submitRes.json();
+                const data = await response.json();
+                console.log('Fal.ai response:', data);
 
-                if (submitData.images && submitData.images.length > 0) {
-                    this.generatedImageUrl = submitData.images[0].url;
+                if (data.images && data.images.length > 0 && data.images[0].url) {
+                    this.generatedImageUrl = data.images[0].url;
                     this.processingProgress = 100;
                     this.finishGeneration();
-                    return;
+                } else {
+                    throw new Error('No image in response: ' + JSON.stringify(data));
                 }
-
-                const requestId = submitData.request_id;
-                if (!requestId) throw new Error('No request_id returned from API');
-                this.processingProgress = 15;
-                this.pollForResult(requestId);
             } catch (err) {
+                clearInterval(this._processingInterval);
                 console.error('Generation error:', err);
                 if (this._msgInterval) clearInterval(this._msgInterval);
                 this.processingError = err.message;
             }
-        },
-
-        async pollForResult(requestId) {
-            let polls = 0;
-            this._processingInterval = setInterval(async () => {
-                polls++;
-                this.processingProgress = Math.min(90, 15 + polls * 5);
-                try {
-                    const statusRes = await fetch(`${FAL_AI_STATUS_BASE}/${requestId}/status`, {
-                        headers: { 'Authorization': 'Key ' + FAL_AI_API_KEY }
-                    });
-                    const statusData = await statusRes.json();
-                    if (statusData.status === 'COMPLETED') {
-                        clearInterval(this._processingInterval);
-                        const resultRes = await fetch(`${FAL_AI_STATUS_BASE}/${requestId}`, {
-                            headers: { 'Authorization': 'Key ' + FAL_AI_API_KEY }
-                        });
-                        const resultData = await resultRes.json();
-                        if (resultData.images && resultData.images.length > 0) {
-                            this.generatedImageUrl = resultData.images[0].url;
-                        }
-                        this.processingProgress = 100;
-                        this.finishGeneration();
-                    } else if (statusData.status === 'FAILED') {
-                        clearInterval(this._processingInterval);
-                        if (this._msgInterval) clearInterval(this._msgInterval);
-                        this.processingError = 'Image generation failed. Please try again.';
-                    }
-                } catch (err) {
-                    if (polls > 60) {
-                        clearInterval(this._processingInterval);
-                        if (this._msgInterval) clearInterval(this._msgInterval);
-                        this.processingError = 'Timeout - please try again.';
-                    }
-                }
-            }, 2000);
         },
 
         finishGeneration() {
