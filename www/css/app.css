@@ -347,6 +347,75 @@ img { display: block; }
 /* ---- RTL ---- */
 [dir="rtl"] .material-symbols-rounded.arrow-nav { transform: scaleX(-1); }
 
+/* ---- Pyalara Bar ---- */
+.pyalara-bar {
+    position: absolute; bottom: 0; left: 0; right: 0; z-index: 50;
+    display: flex; align-items: center; justify-content: center;
+    background: white; padding: 0.6vh 0;
+}
+
+/* ---- Wave Decoration ---- */
+.wave-decoration {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    pointer-events: none; z-index: 1;
+}
+
+/* ---- Processing Needle ---- */
+@keyframes needle-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(1080deg); }
+}
+.processing-needle {
+    animation: needle-spin 3s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+/* ---- Scan animation ---- */
+@keyframes scan {
+    0% { top: -50vh; }
+    100% { top: 150vh; }
+}
+.animate-scan { animation: scan 10s linear infinite; }
+
+/* ---- Countdown pulse ---- */
+@keyframes countdown-pulse {
+    0% { transform: scale(1); opacity: 0.6; }
+    50% { transform: scale(1.15); opacity: 0; }
+    100% { transform: scale(1.3); opacity: 0; }
+}
+@keyframes countdown-orbit { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+@keyframes countdown-bobble { 0%, 100% { transform: translateY(0) scale(1); } 25% { transform: translateY(-0.5vh) scale(1.02); } 75% { transform: translateY(0.3vh) scale(0.98); } }
+@keyframes countdown-brackets-pulse { 0%, 100% { transform: scale(1); opacity: 0.7; } 50% { transform: scale(1.05); opacity: 1; } }
+
+.countdown-orbit { animation: countdown-orbit 4s linear infinite; }
+.countdown-bobble { animation: countdown-bobble 2s ease-in-out infinite; }
+.countdown-brackets { animation: countdown-brackets-pulse 1.5s ease-in-out infinite; }
+
+/* ---- Compass ---- */
+.compass-shadow { filter: drop-shadow(0 0 12px #D4622B); }
+@keyframes compass-spin {
+    0% { transform: rotate(0deg); }
+    60% { transform: rotate(calc(var(--needle-deg) + 30deg)); }
+    80% { transform: rotate(calc(var(--needle-deg) - 10deg)); }
+    100% { transform: rotate(var(--needle-deg)); }
+}
+.compass-needle { animation: compass-spin 1.2s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+.pulsing-glow { box-shadow: 0 0 20px rgba(212, 98, 43, 0.4); }
+
+/* ---- Additional ---- */
+.font-body { font-family: var(--font-body); }
+.font-extrabold { font-weight: 800; }
+.text-on-surface { color: var(--color-on-surface); }
+.text-on-primary { color: var(--color-on-primary); }
+.leading-tight { line-height: 1.25; }
+.leading-relaxed { line-height: 1.625; }
+.shadow-xl { box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1); }
+.shadow-2xl { box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); }
+.content-start { align-content: start; }
+.animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
+.animate-spin { animation: spin 1s linear infinite; }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
 /* ---- Active scale ---- */
 .active\:scale-95:active { transform: scale(0.95); }
 .active\:scale-90:active { transform: scale(0.90); }

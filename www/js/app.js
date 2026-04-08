@@ -68,64 +68,49 @@ const BosalatiSounds = (() => {
 })();
 
 // =============================================
-// Translations
+// Translations (matching original lang files)
 // =============================================
 const TRANSLATIONS = {
     ar: {
-        appName: 'بوصلتي',
-        appTagline: 'اكتشف مسارك المهني',
-        letsStart: 'لنبدأ الرحلة',
-        selectGender: 'اختر جنسك',
-        selectGenderDesc: 'لتخصيص تجربتك بشكل أفضل',
-        male: 'ذكر',
-        female: 'أنثى',
-        showResult: 'أظهر النتيجة',
-        retake: 'إعادة التقاط',
-        continue: 'متابعة',
-        processingTitle: 'جارٍ تحويل صورتك...',
-        tryAgain: 'حاول مرة أخرى',
-        palestine2030: 'فلسطين 2030',
-        aiImpact: 'تأثير الذكاء الاصطناعي',
-        download: 'تحميل',
-        share: 'مشاركة',
-        startOver: 'ابدأ من جديد',
-        step1Title: 'أجب على الأسئلة',
-        step1Desc: 'اكتشف ميولك المهنية',
-        step2Title: 'اكتشف مهنتك',
-        step2Desc: 'تعرّف على المهنة المناسبة لك',
-        step3Title: 'التقط صورتك',
-        step3Desc: 'شاهد نفسك في مهنتك',
-        step4Title: 'شارك رؤيتك',
-        step4Desc: 'حمّل وشارك صورتك المهنية',
+        welcome_heading: 'أهلاً بك في رحلة اكتشاف مستقبلك!',
+        welcome_subtitle: "تطبيق 'بوصلتي' سيساعدك في رسم ملامح مهنتك القادمة باستخدام ذكاء المستقبل.",
+        lets_start: 'هيا بنا نبدأ!',
+        step_answer_questions: 'أجب عن الأسئلة',
+        step_discover_career: 'اكتشف مهنتك',
+        step_see_yourself: 'شاهد نفسك',
+        step_share_vision: 'شارك الرؤية',
+        discover_future_male: 'اكتشف مستقبلك',
+        discover_future_female: 'اكتشفي مستقبلكِ',
+        before: 'قبل',
+        after: 'بعد',
     },
     en: {
-        appName: 'Bosalati',
-        appTagline: 'DISCOVER YOUR CAREER PATH',
-        letsStart: "Let's Start",
-        selectGender: 'Select Your Gender',
-        selectGenderDesc: 'To better personalize your experience',
-        male: 'Male',
-        female: 'Female',
-        showResult: 'Show Result',
-        retake: 'Retake',
-        continue: 'Continue',
-        processingTitle: 'Transforming your photo...',
-        tryAgain: 'Try Again',
-        palestine2030: 'Palestine 2030',
-        aiImpact: 'AI Impact',
-        download: 'Download',
-        share: 'Share',
-        startOver: 'Start Over',
-        step1Title: 'Answer Questions',
-        step1Desc: 'Discover your career interests',
-        step2Title: 'Discover Career',
-        step2Desc: 'Find the career that suits you',
-        step3Title: 'Capture Photo',
-        step3Desc: 'See yourself in your career',
-        step4Title: 'Share Vision',
-        step4Desc: 'Download and share your career photo',
+        welcome_heading: 'Welcome to your future discovery journey!',
+        welcome_subtitle: 'Bosalati will help you map your next career using the intelligence of the future.',
+        lets_start: "Let's Start!",
+        step_answer_questions: 'Answer Questions',
+        step_discover_career: 'Discover Career',
+        step_see_yourself: 'See Yourself',
+        step_share_vision: 'Share Vision',
+        discover_future_male: 'Discover Your Future',
+        discover_future_female: 'Discover Your Future',
+        before: 'Before',
+        after: 'After',
     }
 };
+
+// Arabic feminine conversion
+function arabicFeminine(text) {
+    const replacements = {
+        'تشعر': 'تشعرين', 'تفضل': 'تفضلين', 'تناسبك': 'تناسبكِ',
+        'يمنحك': 'يمنحكِ', 'هدفك': 'هدفكِ', 'أداتك': 'أداتكِ',
+    };
+    let result = text;
+    for (const [from, to] of Object.entries(replacements)) {
+        result = result.replace(new RegExp(from, 'g'), to);
+    }
+    return result;
+}
 
 // =============================================
 // Main App Component
@@ -143,36 +128,27 @@ function bosalatiApp() {
         processingProgress: 0,
         processingError: null,
         processingMsgIndex: 0,
+        processingStatus: 'idle',
         _processingInterval: null,
         _msgInterval: null,
 
         questions: BOSALATI_QUESTIONS,
         careers: BOSALATI_CAREERS,
 
-        steps: [
-            { icon: 'quiz', titleKey: 'step1Title', descKey: 'step1Desc' },
-            { icon: 'explore', titleKey: 'step2Title', descKey: 'step2Desc' },
-            { icon: 'photo_camera', titleKey: 'step3Title', descKey: 'step3Desc' },
-            { icon: 'share', titleKey: 'step4Title', descKey: 'step4Desc' },
-        ],
-
         get processingMessages() {
             if (!this.matchedCareer) return [''];
             if (this.locale === 'ar') {
                 return [
-                    'جارٍ تحليل ملامحك وتحضير صورتك المهنية...',
-                    'يتم تصميم زي ' + this.matchedCareer.name_ar + ' خصيصاً لك...',
-                    'جارٍ إنشاء بيئة العمل المناسبة...',
-                    'اللمسات الأخيرة على صورتك المهنية...',
-                    this.matchedCareer.description_ar,
+                    this.gender === 'female' ? 'يجري تحليل إجاباتِك...' : 'يجري تحليل إجاباتك...',
+                    this.gender === 'female' ? 'نحتسب توافقِك المهني...' : 'نحتسب توافقك المهني...',
+                    this.gender === 'female' ? 'لحظات وستظهر النتيجة...' : 'لحظات وستظهر النتيجة...',
+                    'الذكاء الاصطناعي يعمل على معالجة الصورة...',
                 ];
             }
             return [
-                'Analyzing your features and preparing your career portrait...',
-                'Designing the ' + this.matchedCareer.name_en + ' outfit for you...',
-                'Creating the appropriate work environment...',
-                'Final touches on your career portrait...',
-                this.matchedCareer.description_en,
+                'Analyzing your answers...',
+                'Calculating your career match...',
+                'AI is crafting your transformation...',
             ];
         },
 
@@ -181,6 +157,7 @@ function bosalatiApp() {
         },
 
         toggleLocale() {
+            BosalatiSounds.click();
             this.locale = this.locale === 'ar' ? 'en' : 'ar';
             document.documentElement.lang = this.locale;
             document.documentElement.dir = this.locale === 'ar' ? 'rtl' : 'ltr';
@@ -199,14 +176,19 @@ function bosalatiApp() {
             this.screen = 'quiz';
         },
 
+        getQuestionText() {
+            const q = this.questions[this.currentQuestion];
+            if (this.locale === 'ar') {
+                return this.gender === 'female' ? arabicFeminine(q.question_ar) : q.question_ar;
+            }
+            return q.question_en;
+        },
+
         selectAnswer(option) {
             BosalatiSounds.confirm();
             this.answers[this.currentQuestion] = option;
-            // Auto advance if not last question
             if (this.currentQuestion < this.questions.length - 1) {
-                setTimeout(() => {
-                    this.currentQuestion++;
-                }, 300);
+                setTimeout(() => { this.currentQuestion++; }, 300);
             }
         },
 
@@ -228,26 +210,21 @@ function bosalatiApp() {
             this.generatedImageUrl = null;
             this.processingProgress = 0;
             this.processingError = null;
+            this.processingStatus = 'idle';
             if (this._processingInterval) clearInterval(this._processingInterval);
             if (this._msgInterval) clearInterval(this._msgInterval);
         },
 
         calculateResult() {
             BosalatiSounds.click();
-            // Calculate RIASEC scores
             const scores = { R: 0, I: 0, A: 0, S: 0, E: 0, C: 0 };
             Object.values(this.answers).forEach(option => {
-                if (scores.hasOwnProperty(option.riasec_code)) {
-                    scores[option.riasec_code]++;
-                }
+                if (scores.hasOwnProperty(option.riasec_code)) scores[option.riasec_code]++;
             });
-
-            // Get top 2 letters
             const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
             const top2 = sorted[0][0] + sorted[1][0];
             const topLetter = sorted[0][0];
 
-            // Find matching career
             let career = this.careers.find(c => c.riasec_code === top2);
             if (!career) career = this.careers.find(c => c.riasec_code === top2.split('').reverse().join(''));
             if (!career) career = this.careers.find(c => c.riasec_code.startsWith(topLetter));
@@ -262,26 +239,21 @@ function bosalatiApp() {
         async startGeneration() {
             this.processingProgress = 5;
             this.processingError = null;
+            this.processingStatus = 'processing';
             this.processingMsgIndex = 0;
 
-            // Rotate messages
             this._msgInterval = setInterval(() => {
                 this.processingMsgIndex = (this.processingMsgIndex + 1) % this.processingMessages.length;
-            }, 4000);
+            }, 2500);
 
             const career = this.matchedCareer;
             const promptParts = this.gender === 'female' ? career.ai_prompt_female : career.ai_prompt_male;
-
             const fullPrompt = `maintain the person's exact height, pose, face, beard, glasses, hair, skin tone, headwear. If wearing hijab or headscarf, keep it exactly as is. ONLY change clothing to match this career outfit: ${promptParts}. Change background to: ${career.ai_background}. Keep everything else about the person identical.`;
 
             try {
-                // Submit to queue
                 const submitRes = await fetch(FAL_AI_ENDPOINT, {
                     method: 'POST',
-                    headers: {
-                        'Authorization': 'Key ' + FAL_AI_API_KEY,
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Authorization': 'Key ' + FAL_AI_API_KEY, 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         image_url: this.capturedPhoto,
                         prompt: fullPrompt,
@@ -298,7 +270,6 @@ function bosalatiApp() {
 
                 const submitData = await submitRes.json();
 
-                // Check if result is immediate
                 if (submitData.images && submitData.images.length > 0) {
                     this.generatedImageUrl = submitData.images[0].url;
                     this.processingProgress = 100;
@@ -306,15 +277,10 @@ function bosalatiApp() {
                     return;
                 }
 
-                // Poll for queue result
                 const requestId = submitData.request_id;
-                if (!requestId) {
-                    throw new Error('No request_id returned from API');
-                }
-
+                if (!requestId) throw new Error('No request_id returned from API');
                 this.processingProgress = 15;
                 this.pollForResult(requestId);
-
             } catch (err) {
                 console.error('Generation error:', err);
                 if (this._msgInterval) clearInterval(this._msgInterval);
@@ -327,16 +293,13 @@ function bosalatiApp() {
             this._processingInterval = setInterval(async () => {
                 polls++;
                 this.processingProgress = Math.min(90, 15 + polls * 5);
-
                 try {
                     const statusRes = await fetch(`${FAL_AI_STATUS_BASE}/${requestId}/status`, {
                         headers: { 'Authorization': 'Key ' + FAL_AI_API_KEY }
                     });
                     const statusData = await statusRes.json();
-
                     if (statusData.status === 'COMPLETED') {
                         clearInterval(this._processingInterval);
-                        // Fetch the result
                         const resultRes = await fetch(`${FAL_AI_STATUS_BASE}/${requestId}`, {
                             headers: { 'Authorization': 'Key ' + FAL_AI_API_KEY }
                         });
@@ -364,61 +327,39 @@ function bosalatiApp() {
         finishGeneration() {
             if (this._msgInterval) clearInterval(this._msgInterval);
             BosalatiSounds.success();
-            setTimeout(() => {
-                this.screen = 'result';
-            }, 1000);
+            this.processingStatus = 'allDone';
         },
 
-        // ---- Download / Share ----
         async downloadImage() {
             BosalatiSounds.click();
             const imageUrl = this.generatedImageUrl || this.capturedPhoto;
             try {
-                // Try native share for file download on mobile
-                if (imageUrl.startsWith('data:')) {
-                    // Convert data URL to blob
-                    const res = await fetch(imageUrl);
-                    const blob = await res.blob();
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = 'bosalati-career-' + Date.now() + '.jpg';
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    URL.revokeObjectURL(url);
-                } else {
-                    // Remote URL - fetch and download
-                    const res = await fetch(imageUrl);
-                    const blob = await res.blob();
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = 'bosalati-career-' + Date.now() + '.png';
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    URL.revokeObjectURL(url);
-                }
+                const res = await fetch(imageUrl);
+                const blob = await res.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'bosalati-career-' + Date.now() + '.jpg';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
             } catch (e) {
-                // Fallback: open in new tab
                 window.open(imageUrl, '_blank');
             }
         },
 
         async shareImage() {
             BosalatiSounds.click();
-            const imageUrl = this.generatedImageUrl || this.capturedPhoto;
             const careerName = this.locale === 'ar' ? this.matchedCareer?.name_ar : this.matchedCareer?.name_en;
             const shareText = this.locale === 'ar'
-                ? `اكتشفت مهنتي المستقبلية عبر بوصلتي: ${careerName}! 🧭`
-                : `I discovered my future career through Bosalati: ${careerName}! 🧭`;
-
+                ? `اكتشفت مهنتي المستقبلية عبر بوصلتي: ${careerName}!`
+                : `I discovered my future career through Bosalati: ${careerName}!`;
             if (navigator.share) {
                 try {
-                    let shareData = { title: 'Bosalati - بوصلتي', text: shareText };
-                    // Try to share image file
-                    if (imageUrl.startsWith('data:') || imageUrl.startsWith('blob:')) {
+                    const imageUrl = this.generatedImageUrl || this.capturedPhoto;
+                    let shareData = { title: 'Bosalati', text: shareText };
+                    if (imageUrl) {
                         const res = await fetch(imageUrl);
                         const blob = await res.blob();
                         const file = new File([blob], 'bosalati-career.jpg', { type: 'image/jpeg' });
@@ -427,22 +368,16 @@ function bosalatiApp() {
                         }
                     }
                     await navigator.share(shareData);
-                } catch (e) {
-                    // User cancelled or error
-                }
-            } else {
-                // Fallback: copy text
-                try {
-                    await navigator.clipboard.writeText(shareText);
-                    alert(this.locale === 'ar' ? 'تم نسخ النص!' : 'Text copied!');
                 } catch (e) {}
+            } else {
+                try { await navigator.clipboard.writeText(shareText); } catch (e) {}
             }
         }
     };
 }
 
 // =============================================
-// Camera Component
+// Camera Component - with proper Android permission handling
 // =============================================
 function cameraComponent() {
     return {
@@ -452,24 +387,93 @@ function cameraComponent() {
         cameraError: null,
         countdown: 0,
 
+        async requestCameraPermission() {
+            // For Capacitor/Android: request permission through the Permissions API first
+            try {
+                // Try Capacitor Camera plugin permission if available
+                if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Camera) {
+                    const permResult = await window.Capacitor.Plugins.Camera.requestPermissions({ permissions: ['camera'] });
+                    console.log('Capacitor camera permission:', permResult);
+                }
+            } catch (e) {
+                console.log('Capacitor permission request not available, using navigator directly');
+            }
+
+            // Also try the Permissions API
+            try {
+                if (navigator.permissions) {
+                    const result = await navigator.permissions.query({ name: 'camera' });
+                    console.log('Camera permission state:', result.state);
+                }
+            } catch (e) {
+                console.log('Permissions API not available');
+            }
+
+            // Now init camera
+            await this.initCamera();
+        },
+
         async initCamera() {
             try {
                 if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                    this.cameraError = this.locale === 'ar'
+                    this.cameraError = this.$data.locale === 'ar'
                         ? 'الكاميرا غير متوفرة في هذا المتصفح'
                         : 'Camera not supported in this browser';
                     return;
                 }
-                this.stream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
-                    audio: false
-                });
-                this.$refs.video.srcObject = this.stream;
+
+                // Try to get camera - first try user-facing, then fall back to any camera (for USB/external)
+                let stream = null;
+                try {
+                    stream = await navigator.mediaDevices.getUserMedia({
+                        video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
+                        audio: false
+                    });
+                } catch (firstErr) {
+                    console.log('Front camera failed, trying any available camera:', firstErr.message);
+                    // Fallback: try any available camera (USB/external cameras on Android TV)
+                    try {
+                        stream = await navigator.mediaDevices.getUserMedia({
+                            video: { width: { ideal: 1280 }, height: { ideal: 720 } },
+                            audio: false
+                        });
+                    } catch (secondErr) {
+                        // Last resort: enumerate devices and try the first video input
+                        const devices = await navigator.mediaDevices.enumerateDevices();
+                        const videoDevices = devices.filter(d => d.kind === 'videoinput');
+                        console.log('Available video devices:', videoDevices);
+                        if (videoDevices.length > 0) {
+                            stream = await navigator.mediaDevices.getUserMedia({
+                                video: { deviceId: { exact: videoDevices[0].deviceId } },
+                                audio: false
+                            });
+                        } else {
+                            throw secondErr;
+                        }
+                    }
+                }
+                this.stream = stream;
+
+                const video = this.$refs.video;
+                if (video) {
+                    video.srcObject = this.stream;
+                    video.setAttribute('autoplay', '');
+                    video.setAttribute('playsinline', '');
+                    video.setAttribute('muted', '');
+                    await video.play().catch(() => {});
+                }
                 this.isCameraReady = true;
             } catch (err) {
-                this.cameraError = this.locale === 'ar'
-                    ? 'فشل الوصول إلى الكاميرا: ' + err.message
-                    : 'Camera access failed: ' + err.message;
+                console.error('Camera error:', err);
+                if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+                    this.cameraError = this.$data.locale === 'ar'
+                        ? 'يرجى السماح بالوصول إلى الكاميرا من إعدادات التطبيق'
+                        : 'Please allow camera access in app settings';
+                } else {
+                    this.cameraError = this.$data.locale === 'ar'
+                        ? 'فشل الوصول إلى الكاميرا: ' + err.message
+                        : 'Camera access failed: ' + err.message;
+                }
             }
         },
 
@@ -492,8 +496,7 @@ function cameraComponent() {
             BosalatiSounds.shutter();
             const video = this.$refs.video;
             const canvas = document.createElement('canvas');
-
-            const targetRatio = 3 / 4;
+            const targetRatio = 2 / 3;
             const videoRatio = video.videoWidth / video.videoHeight;
             let sx, sy, sw, sh;
             if (videoRatio > targetRatio) {
@@ -503,31 +506,27 @@ function cameraComponent() {
                 sw = video.videoWidth; sh = sw / targetRatio;
                 sx = 0; sy = (video.videoHeight - sh) / 2;
             }
-
             canvas.width = 768;
             canvas.height = 1024;
             const ctx = canvas.getContext('2d');
             ctx.translate(canvas.width, 0);
             ctx.scale(-1, 1);
             ctx.drawImage(video, sx, sy, sw, sh, 0, 0, 768, 1024);
-
             this.photo = canvas.toDataURL('image/jpeg', 0.85);
         },
 
-        retake() {
-            this.photo = null;
-        },
+        retake() { this.photo = null; },
 
         submitPhoto() {
             BosalatiSounds.click();
-            // Store photo in parent scope
-            this.$data.capturedPhoto = this.photo;
-            this.stopCamera();
-            this.$data.screen = 'processing';
-            // Start AI generation after a brief delay
-            setTimeout(() => {
-                this.$data.startGeneration();
-            }, 500);
+            // Access parent component data via Alpine's magic
+            const app = Alpine.closestDataStack(this.$el).find(d => d.capturedPhoto !== undefined);
+            if (app) {
+                app.capturedPhoto = this.photo;
+                this.stopCamera();
+                app.screen = 'processing';
+                setTimeout(() => { app.startGeneration(); }, 500);
+            }
         },
 
         stopCamera() {
@@ -538,13 +537,3 @@ function cameraComponent() {
         }
     };
 }
-
-// =============================================
-// Global click sound
-// =============================================
-document.addEventListener('click', (e) => {
-    const target = e.target.closest('button');
-    if (target && !target.closest('[x-data="cameraComponent()"]')) {
-        // Sound already handled in specific handlers
-    }
-}, true);
