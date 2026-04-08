@@ -1,0 +1,24 @@
+{
+  "name": "bosalati-app",
+  "version": "1.0.0",
+  "description": "Bosalati - Career Discovery App",
+  "main": "index.js",
+  "scripts": {
+    "build": "echo 'Static app - no build needed'",
+    "cap:init": "npx cap init Bosalati ps.intertech.bosalati --web-dir www",
+    "cap:add": "npx cap add android",
+    "cap:sync": "npx cap sync android",
+    "cap:open": "npx cap open android"
+  },
+  "keywords": [],
+  "author": "Intertech",
+  "license": "ISC",
+  "dependencies": {
+    "@capacitor/android": "^8.3.0",
+    "@capacitor/camera": "^8.0.2",
+    "@capacitor/cli": "^8.3.0",
+    "@capacitor/core": "^8.3.0",
+    "@capacitor/filesystem": "^8.1.2",
+    "@capacitor/share": "^8.0.1"
+  }
+}

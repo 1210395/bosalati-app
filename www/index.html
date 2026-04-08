@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Bosalati - بوصلتي</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800;900&family=Tajawal:wght@300;400;500;700;800;900&family=Manrope:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Readex+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+    <div id="app" class="app-container" x-data="bosalatiApp()" x-cloak>
+        <!-- Film Grain Overlay -->
+        <div class="film-grain"></div>
+
+        <!-- Ambient Glows -->
+        <div class="ambient-glow-top"></div>
+        <div class="ambient-glow-bottom"></div>
+
+        <!-- ==================== WELCOME SCREEN ==================== -->
+        <div x-show="screen === 'welcome'" x-transition:enter="animate-fade-in-up" class="safe-zone relative z-10">
+            <!-- Header -->
+            <div class="section-header flex items-center justify-between">
+                <div></div>
+                <button @click="toggleLocale()" class="glass-card rounded-full px-4 py-2 text-vh-sm font-label flex items-center gap-2 active:scale-95 neon-glow border border-outline-variant">
+                    <span class="material-symbols-rounded icon-vh-xs">translate</span>
+                    <span x-text="locale === 'ar' ? 'English' : 'عربي'"></span>
+                </button>
+            </div>
+
+            <!-- Content -->
+            <div class="section-content flex flex-col items-center justify-center gap-6">
+                <!-- Logo -->
+                <div class="text-center animate-fade-in-up">
+                    <div class="flex items-center justify-center gap-3 mb-2">
+                        <span class="material-symbols-rounded icon-vh-lg filled text-primary">explore</span>
+                    </div>
+                    <h1 class="text-vh-4xl font-headline font-bold gradient-text-primary" x-text="t('appName')"></h1>
+                    <p class="text-vh-subhero text-on-surface-variant tracking-widest uppercase mt-2" x-text="t('appTagline')"></p>
+                </div>
+
+                <!-- Steps -->
+                <div class="w-full max-w-sm space-y-3 animate-fade-in-up delay-300">
+                    <template x-for="(step, i) in steps" :key="i">
+                        <div class="glass-card rounded-2xl p-4 flex items-center gap-4 border border-outline-variant/30"
+                             :style="'animation-delay:' + (0.2 + i*0.1) + 's'">
+                            <div class="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+                                <span class="material-symbols-rounded text-primary" x-text="step.icon"></span>
+                            </div>
+                            <div>
+                                <p class="text-vh-base font-bold" x-text="t(step.titleKey)"></p>
+                                <p class="text-vh-sm text-on-surface-variant" x-text="t(step.descKey)"></p>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="section-footer flex items-center justify-center">
+                <button @click="goTo('home')" class="w-full max-w-sm gradient-primary text-white font-bold text-vh-xl rounded-2xl py-5 active:scale-95 animate-pulse-glow neon-glow border border-primary/30">
+                    <span x-text="t('letsStart')"></span>
+                    <span class="material-symbols-rounded align-middle ms-2">arrow_forward</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- ==================== HOME / GENDER SCREEN ==================== -->
+        <div x-show="screen === 'home'" x-transition:enter="animate-fade-in-up" class="safe-zone relative z-10">
+            <div class="section-header flex items-center justify-between">
+                <button @click="goTo('welcome')" class="glass-card rounded-full p-3 active:scale-95 neon-glow border border-outline-variant">
+                    <span class="material-symbols-rounded icon-vh-xs arrow-nav">arrow_back</span>
+                </button>
+                <button @click="toggleLocale()" class="glass-card rounded-full px-4 py-2 text-vh-sm font-label flex items-center gap-2 active:scale-95 neon-glow border border-outline-variant">
+                    <span class="material-symbols-rounded icon-vh-xs">translate</span>
+                    <span x-text="locale === 'ar' ? 'English' : 'عربي'"></span>
+                </button>
+            </div>
+
+            <div class="section-content flex flex-col items-center justify-center gap-8">
+                <div class="text-center">
+                    <h2 class="text-vh-3xl font-headline font-bold" x-text="t('selectGender')"></h2>
+                    <p class="text-vh-base text-on-surface-variant mt-2" x-text="t('selectGenderDesc')"></p>
+                </div>
+
+                <div class="flex gap-6 w-full max-w-sm">
+                    <!-- Male -->
+                    <button @click="selectGender('male')" class="flex-1 glass-card rounded-3xl p-6 flex flex-col items-center gap-4 border border-outline-variant active:scale-95 neon-glow transition-all">
+                        <div class="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center">
+                            <span class="material-symbols-rounded icon-vh-lg filled text-primary">male</span>
+                        </div>
+                        <span class="text-vh-lg font-bold" x-text="t('male')"></span>
+                    </button>
+                    <!-- Female -->
+                    <button @click="selectGender('female')" class="flex-1 glass-card rounded-3xl p-6 flex flex-col items-center gap-4 border border-outline-variant active:scale-95 neon-glow transition-all">
+                        <div class="w-20 h-20 rounded-full bg-secondary/20 flex items-center justify-center">
+                            <span class="material-symbols-rounded icon-vh-lg filled text-secondary">female</span>
+                        </div>
+                        <span class="text-vh-lg font-bold" x-text="t('female')"></span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="section-footer"></div>
+        </div>
+
+        <!-- ==================== QUIZ SCREEN ==================== -->
+        <div x-show="screen === 'quiz'" x-transition:enter="animate-fade-in-up" class="safe-zone relative z-10">
+            <div class="section-header flex items-center justify-between">
+                <button @click="prevQuestion()" class="glass-card rounded-full p-3 active:scale-95 neon-glow border border-outline-variant">
+                    <span class="material-symbols-rounded icon-vh-xs arrow-nav">arrow_back</span>
+                </button>
+
+                <!-- Compass Progress -->
+                <div class="relative w-16 h-16">
+                    <svg viewBox="0 0 100 100" class="w-full h-full">
+                        <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(59,107,94,0.3)" stroke-width="4"/>
+                        <circle cx="50" cy="50" r="40" fill="none" stroke="#D4622B" stroke-width="4" stroke-linecap="round"
+                                :stroke-dasharray="251.2"
+                                :stroke-dashoffset="251.2 - (251.2 * (currentQuestion + 1) / questions.length)"
+                                transform="rotate(-90 50 50)" class="transition-all duration-500"/>
+                        <text x="50" y="55" text-anchor="middle" fill="#F0E8E0" font-size="20" font-family="Space Grotesk"
+                              x-text="(currentQuestion + 1) + '/' + questions.length"></text>
+                    </svg>
+                </div>
+
+                <button @click="goTo('welcome'); resetQuiz()" class="glass-card rounded-full p-3 active:scale-95 neon-glow border border-outline-variant">
+                    <span class="material-symbols-rounded icon-vh-xs">home</span>
+                </button>
+            </div>
+
+            <div class="section-content flex flex-col">
+                <!-- Category Badge -->
+                <div class="text-center mb-4 animate-fade-in-up">
+                    <span class="glass-card rounded-full px-4 py-1 text-vh-xs text-primary font-label inline-block border border-primary/30"
+                          x-text="locale === 'ar' ? questions[currentQuestion].category_ar : questions[currentQuestion].category_en"></span>
+                </div>
+
+                <!-- Question -->
+                <h3 class="text-vh-xl font-headline font-bold text-center mb-6 animate-fade-in-up delay-100"
+                    x-text="locale === 'ar' ? questions[currentQuestion].question_ar : questions[currentQuestion].question_en"></h3>
+
+                <!-- Options Grid -->
+                <div class="grid grid-cols-2 gap-3 flex-1 overflow-y-auto scroll-hide animate-fade-in-up delay-200">
+                    <template x-for="(option, i) in questions[currentQuestion].options" :key="i">
+                        <button @click="selectAnswer(option)"
+                                :class="answers[currentQuestion] && answers[currentQuestion].riasec_code === option.riasec_code
+                                    ? 'border-primary bg-primary/20 neon-glow active'
+                                    : 'border-outline-variant'"
+                                class="glass-card rounded-2xl p-4 flex flex-col items-center justify-center gap-2 border active:scale-95 transition-all min-h-[12vh]">
+                            <span class="material-symbols-rounded icon-vh-sm text-primary" x-text="option.icon"></span>
+                            <span class="text-vh-sm font-medium text-center" x-text="locale === 'ar' ? option.label_ar : option.label_en"></span>
+                        </button>
+                    </template>
+                </div>
+            </div>
+
+            <div class="section-footer flex items-center justify-center">
+                <!-- Show Result Button (last question only) -->
+                <button x-show="currentQuestion === questions.length - 1 && answers[currentQuestion]"
+                        @click="calculateResult()"
+                        x-transition
+                        class="w-full max-w-sm gradient-primary text-white font-bold text-vh-lg rounded-2xl py-4 active:scale-95 animate-pulse-glow neon-glow border border-primary/30">
+                    <span class="material-symbols-rounded align-middle me-2">explore</span>
+                    <span x-text="t('showResult')"></span>
+                </button>
+            </div>
+        </div>
+
+        <!-- ==================== CAPTURE SCREEN ==================== -->
+        <div x-show="screen === 'capture'" x-transition:enter="animate-fade-in-up" class="safe-zone relative z-10"
+             x-data="cameraComponent()" x-init="initCamera()">
+
+            <div class="section-header flex items-center justify-between">
+                <button @click="stopCamera(); goTo('welcome'); resetQuiz()" class="glass-card rounded-full p-3 active:scale-95 neon-glow border border-outline-variant">
+                    <span class="material-symbols-rounded icon-vh-xs">home</span>
+                </button>
+                <!-- Career Badge -->
+                <div class="glass-card rounded-full px-4 py-2 text-vh-xs font-label border border-primary/30 text-primary"
+                     x-text="matchedCareer ? (locale === 'ar' ? matchedCareer.name_ar : matchedCareer.name_en) : ''">
+                </div>
+            </div>
+
+            <div class="section-content flex flex-col items-center justify-center relative">
+                <!-- Camera View -->
+                <div class="relative w-full flex-1 rounded-3xl overflow-hidden border-2 border-outline-variant bg-black">
+                    <video x-ref="video" autoplay playsinline muted
+                           x-show="!photo"
+                           class="w-full h-full object-cover" style="transform: scaleX(-1);"></video>
+
+                    <!-- Captured Photo -->
+                    <img x-show="photo" :src="photo" class="w-full h-full object-cover">
+
+                    <!-- Viewfinder Grid -->
+                    <div x-show="!photo" class="absolute inset-0 viewfinder-grid pointer-events-none"></div>
+                    <div x-show="!photo" class="viewfinder-crosshair pointer-events-none"></div>
+
+                    <!-- Countdown Overlay -->
+                    <div x-show="countdown > 0" class="absolute inset-0 flex items-center justify-center bg-black/40 z-20">
+                        <div class="relative">
+                            <!-- Shockwave -->
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <div class="w-32 h-32 countdown-shockwave border-primary"></div>
+                            </div>
+                            <!-- Number -->
+                            <div class="text-vh-hero font-headline font-black text-white drop-shadow-2xl"
+                                 :key="countdown"
+                                 style="animation: countdown-pop 0.5s ease-out"
+                                 x-text="countdown"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Error -->
+                <div x-show="cameraError" class="absolute inset-0 flex items-center justify-center">
+                    <div class="glass-card rounded-3xl p-8 text-center border border-error/30 max-w-xs">
+                        <span class="material-symbols-rounded icon-vh-lg text-error">videocam_off</span>
+                        <p class="text-vh-base mt-4" x-text="cameraError"></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-footer flex items-center justify-center gap-4">
+                <!-- Capture Button -->
+                <template x-if="!photo && isCameraReady">
+                    <button @click="captureWithCountdown()" :disabled="countdown > 0"
+                            class="w-20 h-20 rounded-full bg-white/90 border-4 border-primary flex items-center justify-center active:scale-90 transition-all animate-pulse-glow">
+                        <span class="material-symbols-rounded text-4xl text-surface filled">photo_camera</span>
+                    </button>
+                </template>
+
+                <!-- Retake / Continue -->
+                <template x-if="photo">
+                    <div class="flex gap-4 w-full max-w-sm">
+                        <button @click="retake()" class="flex-1 glass-card rounded-2xl py-4 text-vh-base font-bold active:scale-95 neon-glow border border-outline-variant">
+                            <span class="material-symbols-rounded align-middle me-2">refresh</span>
+                            <span x-text="t('retake')"></span>
+                        </button>
+                        <button @click="submitPhoto()" class="flex-1 gradient-primary text-white rounded-2xl py-4 text-vh-base font-bold active:scale-95 neon-glow border border-primary/30">
+                            <span x-text="t('continue')"></span>
+                            <span class="material-symbols-rounded align-middle ms-2">arrow_forward</span>
+                        </button>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <!-- ==================== PROCESSING SCREEN ==================== -->
+        <div x-show="screen === 'processing'" x-transition:enter="animate-fade-in-up" class="safe-zone relative z-10">
+            <div class="section-header"></div>
+
+            <div class="section-content flex flex-col items-center justify-center gap-6">
+                <!-- Spinning Compass -->
+                <div class="relative w-40 h-40 animate-fade-in-up">
+                    <svg viewBox="0 0 200 200" class="w-full h-full">
+                        <!-- Background ring -->
+                        <circle cx="100" cy="100" r="80" fill="none" stroke="rgba(59,107,94,0.2)" stroke-width="6"/>
+                        <!-- Progress ring -->
+                        <circle cx="100" cy="100" r="80" fill="none" stroke="#D4622B" stroke-width="6" stroke-linecap="round"
+                                :stroke-dasharray="502.6"
+                                :stroke-dashoffset="502.6 - (502.6 * processingProgress / 100)"
+                                transform="rotate(-90 100 100)" class="transition-all duration-1000"/>
+                        <!-- Compass icon -->
+                        <text x="100" y="95" text-anchor="middle" fill="#D4622B" font-size="50" font-family="Material Symbols Rounded">&#xe566;</text>
+                        <!-- Percentage -->
+                        <text x="100" y="130" text-anchor="middle" fill="#F0E8E0" font-size="18" font-family="Space Grotesk"
+                              x-text="Math.round(processingProgress) + '%'"></text>
+                    </svg>
+                </div>
+
+                <!-- Status Text -->
+                <div class="text-center animate-fade-in-up delay-200">
+                    <h3 class="text-vh-xl font-headline font-bold" x-text="t('processingTitle')"></h3>
+                    <p class="text-vh-base text-on-surface-variant mt-2" x-text="processingMessages[processingMsgIndex]"></p>
+                </div>
+
+                <!-- Career Info Card -->
+                <div x-show="matchedCareer" class="glass-card rounded-2xl p-5 w-full max-w-sm border border-outline-variant/30 animate-fade-in-up delay-400">
+                    <div class="flex items-center gap-3 mb-3">
+                        <span class="material-symbols-rounded icon-vh-sm text-primary" x-text="matchedCareer?.icon"></span>
+                        <span class="text-vh-base font-bold" x-text="locale === 'ar' ? matchedCareer?.name_ar : matchedCareer?.name_en"></span>
+                    </div>
+                    <p class="text-vh-sm text-on-surface-variant" x-text="locale === 'ar' ? matchedCareer?.description_ar : matchedCareer?.description_en"></p>
+                </div>
+
+                <!-- Error -->
+                <div x-show="processingError" class="glass-card rounded-2xl p-5 w-full max-w-sm border border-error/30 text-center">
+                    <span class="material-symbols-rounded icon-vh-md text-error">error</span>
+                    <p class="text-vh-base mt-2" x-text="processingError"></p>
+                    <button @click="startGeneration()" class="mt-4 gradient-primary text-white rounded-xl px-6 py-3 text-vh-sm font-bold active:scale-95">
+                        <span x-text="t('tryAgain')"></span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="section-footer"></div>
+        </div>
+
+        <!-- ==================== RESULT SCREEN ==================== -->
+        <div x-show="screen === 'result'" x-transition:enter="animate-fade-in-up" class="safe-zone relative z-10">
+            <div class="section-header flex items-center justify-center">
+                <h2 class="text-vh-xl font-headline font-bold gradient-text-primary animate-fade-in-up"
+                    x-text="locale === 'ar' ? matchedCareer?.name_ar : matchedCareer?.name_en"></h2>
+            </div>
+
+            <div class="section-content flex flex-col items-center gap-4 overflow-y-auto scroll-hide">
+                <!-- Generated Image -->
+                <div class="relative w-full max-w-xs rounded-3xl overflow-hidden border-2 border-primary/30 animate-scale-in" style="aspect-ratio: 3/4;">
+                    <img :src="generatedImageUrl || capturedPhoto" class="w-full h-full object-cover" alt="Career Portrait">
+                    <!-- Badge -->
+                    <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
+                        <span class="text-vh-xs font-label text-primary tracking-wider uppercase" x-text="matchedCareer?.badge_label"></span>
+                    </div>
+                </div>
+
+                <!-- Info Cards -->
+                <div class="w-full max-w-sm space-y-3 animate-fade-in-up delay-300">
+                    <!-- Palestine 2030 -->
+                    <div class="glass-card rounded-2xl p-4 border border-outline-variant/30">
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="material-symbols-rounded text-secondary icon-vh-xs">flag</span>
+                            <span class="text-vh-sm font-bold" x-text="t('palestine2030')"></span>
+                            <span class="ms-auto text-vh-xs text-primary font-bold" x-text="'+' + matchedCareer?.growth_percentage + '%'"></span>
+                        </div>
+                        <p class="text-vh-xs text-on-surface-variant" x-text="locale === 'ar' ? matchedCareer?.palestine_2030_insight_ar : matchedCareer?.palestine_2030_insight_en"></p>
+                    </div>
+
+                    <!-- AI Impact -->
+                    <div class="glass-card rounded-2xl p-4 border border-outline-variant/30">
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="material-symbols-rounded text-tertiary icon-vh-xs">smart_toy</span>
+                            <span class="text-vh-sm font-bold" x-text="t('aiImpact')"></span>
+                        </div>
+                        <p class="text-vh-xs text-on-surface-variant" x-text="locale === 'ar' ? matchedCareer?.ai_impact_ar : matchedCareer?.ai_impact_en"></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-footer flex flex-col items-center justify-center gap-3">
+                <!-- Download / Share -->
+                <div class="flex gap-3 w-full max-w-sm">
+                    <button @click="downloadImage()" class="flex-1 gradient-primary text-white rounded-2xl py-4 text-vh-base font-bold active:scale-95 neon-glow border border-primary/30">
+                        <span class="material-symbols-rounded align-middle me-2">download</span>
+                        <span x-text="t('download')"></span>
+                    </button>
+                    <button @click="shareImage()" class="flex-1 glass-card rounded-2xl py-4 text-vh-base font-bold active:scale-95 neon-glow border border-outline-variant">
+                        <span class="material-symbols-rounded align-middle me-2">share</span>
+                        <span x-text="t('share')"></span>
+                    </button>
+                </div>
+                <!-- Start Over -->
+                <button @click="goTo('welcome'); resetQuiz()" class="text-vh-sm text-on-surface-variant active:scale-95">
+                    <span class="material-symbols-rounded align-middle me-1 text-sm">restart_alt</span>
+                    <span x-text="t('startOver')"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alpine.js CDN -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js"></script>
+    <script src="js/data.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

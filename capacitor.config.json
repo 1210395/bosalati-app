@@ -1,0 +1,20 @@
+{
+  "appId": "ps.intertech.bosalati",
+  "appName": "Bosalati",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https",
+    "allowNavigation": ["*.fal.run", "*.fal.ai", "queue.fal.run", "fonts.googleapis.com", "fonts.gstatic.com", "cdn.jsdelivr.net"]
+  },
+  "android": {
+    "allowMixedContent": true,
+    "webContentsDebuggingEnabled": false
+  },
+  "plugins": {
+    "Camera": {
+      "android": {
+        "permissions": ["camera"]
+      }
+    }
+  }
+}
