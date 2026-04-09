@@ -36,7 +36,7 @@
 
             <!-- ==================== WELCOME SCREEN ==================== -->
             <template x-if="screen === 'welcome'">
-                <div class="flex flex-col h-full w-full">
+                <div class="flex flex-col" style="height:100%;width:100%;">
                     <header class="section-header flex items-center justify-center">
                         <img src="img/4.png" alt="Bosalati AI" style="height: 10vh;">
                     </header>
@@ -48,7 +48,7 @@
                            x-text="t('welcome_subtitle')"></p>
 
                         <!-- Hero background with steps -->
-                        <div class="relative w-full flex-1 animate-fade-in-up delay-300 overflow-hidden" style="border-radius: 2vh;">
+                        <div class="relative w-full animate-fade-in-up delay-300 overflow-hidden" style="flex:1;border-radius: 2vh;">
                             <div class="absolute inset-0 z-0">
                                 <img src="img/hero.webp" alt="" class="w-full h-full object-cover">
                                 <div class="absolute inset-0" style="background: rgba(15, 30, 38, 0.7);"></div>
@@ -93,13 +93,13 @@
 
                     <footer class="section-footer flex flex-col items-center justify-center" style="gap:1vh;">
                         <button @click="goTo('home')"
-                           class="text-white rounded-full border-2 border-primary flex items-center justify-center font-body font-bold pulsing-glow animate-pulse-glow transition-all active:scale-[0.98]"
+                           class="text-white rounded-full border-2 border-primary flex items-center justify-center font-body font-bold pulsing-glow animate-pulse-glow transition-all active:scale-95"
                            style="padding:1.2vh 4vh;font-size:2vh;background:var(--color-primary-container);gap:0.8vh;">
                             <span class="material-symbols-rounded filled" style="font-size:2.2vh;">rocket_launch</span>
                             <span x-text="t('lets_start')"></span>
                         </button>
                         <div class="flex items-center justify-center">
-                            <button @click="toggleLocale()" class="text-vh-xs hover:text-primary transition-colors flex items-center" style="color:#8B9E6B;gap:0.5vh;">
+                            <button @click="toggleLocale()" class="text-vh-xs transition-all flex items-center" style="color:#8B9E6B;gap:0.5vh;">
                                 <span class="material-symbols-rounded icon-vh-xs">language</span>
                                 <span x-text="locale==='ar'?'English':'العربية'"></span>
                             </button>
@@ -111,7 +111,7 @@
 
             <!-- ==================== HOME / GENDER SCREEN ==================== -->
             <template x-if="screen === 'home'">
-                <div class="flex flex-col h-full w-full">
+                <div class="flex flex-col" style="height:100%;width:100%;">
                     <!-- BG effects -->
                     <div class="absolute inset-0 z-0" style="background:radial-gradient(circle at center top,#1B3A4B 0%,transparent 70%);"></div>
                     <div class="absolute left-0 w-full z-0 animate-scan" style="height:0.3vh;background:linear-gradient(90deg,transparent 0%,rgba(139,158,107,0.15) 50%,transparent 100%);"></div>
@@ -140,8 +140,7 @@
 
                         <!-- Gender buttons -->
                         <div class="flex items-center justify-center w-full animate-fade-in-up delay-200" style="gap:2vh;">
-                            <button @click="selectGender('male')" class="group relative p-[0.3vh] transition-all hover:scale-[1.03] active:scale-[0.97]"
-                                    style="border-radius:0.75rem;background:linear-gradient(135deg,#D4622B 0%,#5A2810 100%);box-shadow:0 0 25px rgba(212,98,43,0.25);">
+                            <button @click="selectGender('male')" class="relative transition-all active:scale-95" style="padding:0.3vh;border-radius:0.75rem;background:linear-gradient(135deg,#D4622B 0%,#5A2810 100%);box-shadow:0 0 25px rgba(212,98,43,0.25);">
                                 <div class="flex flex-col items-center" style="background:var(--color-primary-container);border-radius:0.5rem;padding:2vh 3vh;gap:1vh;">
                                     <div class="flex items-center justify-center" style="width:7vh;height:7vh;border-radius:50%;border:2px solid rgba(212,98,43,0.3);background:rgba(34,68,85,0.4);">
                                         <span class="material-symbols-rounded filled icon-vh-md text-primary">person</span>
@@ -150,8 +149,7 @@
                                     <span class="text-vh-2xs font-body uppercase tracking-wider" style="color:rgba(139,158,107,0.6);">Male</span>
                                 </div>
                             </button>
-                            <button @click="selectGender('female')" class="group relative p-[0.3vh] transition-all hover:scale-[1.03] active:scale-[0.97]"
-                                    style="border-radius:0.75rem;background:linear-gradient(135deg,#D4622B 0%,#5A2810 100%);box-shadow:0 0 25px rgba(212,98,43,0.25);">
+                            <button @click="selectGender('female')" class="relative transition-all active:scale-95" style="padding:0.3vh;border-radius:0.75rem;background:linear-gradient(135deg,#D4622B 0%,#5A2810 100%);box-shadow:0 0 25px rgba(212,98,43,0.25);">
                                 <div class="flex flex-col items-center" style="background:var(--color-primary-container);border-radius:0.5rem;padding:2vh 3vh;gap:1vh;">
                                     <div class="flex items-center justify-center" style="width:7vh;height:7vh;border-radius:50%;border:2px solid rgba(212,98,43,0.3);background:rgba(34,68,85,0.4);">
                                         <span class="material-symbols-rounded filled icon-vh-md text-primary">face_3</span>
@@ -164,7 +162,7 @@
                     </main>
 
                     <footer class="section-footer flex flex-col items-center justify-center relative z-10">
-                        <button @click="toggleLocale()" class="text-vh-xs hover:text-primary transition-colors flex items-center" style="color:#8B9E6B;gap:0.5vh;">
+                        <button @click="toggleLocale()" class="text-vh-xs transition-all flex items-center" style="color:#8B9E6B;gap:0.5vh;">
                             <span class="material-symbols-rounded icon-vh-xs">language</span>
                             <span x-text="locale==='ar'?'English':'العربية'"></span>
                         </button>
@@ -175,7 +173,7 @@
 
             <!-- ==================== QUIZ SCREEN ==================== -->
             <template x-if="screen === 'quiz'">
-                <div class="flex flex-col h-full w-full">
+                <div class="flex flex-col" style="height:100%;width:100%;">
                     <div class="section-header flex items-center justify-between" style="padding:0 2vh;direction:ltr;">
                         <div class="flex items-center"><img src="img/4.png" alt="Bosalati AI" style="height:7vh;"></div>
                         <div class="flex items-center" style="gap:2vh;">
@@ -216,7 +214,7 @@
                         </div>
 
                         <!-- Options Grid -->
-                        <div class="flex-1 grid grid-cols-2 overflow-y-auto scroll-hide content-start" style="gap:2vh;">
+                        <div class="grid grid-cols-2 overflow-y-auto scroll-hide content-start" style="flex:1;gap:2vh;">
                             <template x-for="(option, i) in questions[currentQuestion].options" :key="i">
                                 <button @click="selectAnswer(option)"
                                     :style="(answers[currentQuestion] && answers[currentQuestion].riasec_code === option.riasec_code) ? 'background:rgba(212,98,43,0.08);border:1px solid rgba(212,98,43,0.4);' : 'background:rgba(27,58,75,0.5);border:1px solid transparent;'"
@@ -248,7 +246,7 @@
                                 </button>
                             </div>
                         </template>
-                        <!-- Nav buttons - stuck to bottom -->
+                        <!-- Nav buttons -->
                         <div class="flex justify-between items-center w-full">
                             <button @click="prevQuestion()" class="flex items-center justify-center transition-all active:scale-95" style="width:6vh;height:6vh;border-radius:50%;background:#D4622B;">
                                 <span class="material-symbols-rounded text-white" style="font-size:2.5vh;">arrow_forward</span>
@@ -264,7 +262,7 @@
 
             <!-- ==================== CAPTURE SCREEN ==================== -->
             <template x-if="screen === 'capture'">
-                <div x-data="cameraComponent()" x-init="requestCameraPermission()" class="flex flex-col h-full w-full">
+                <div x-data="cameraComponent()" x-init="initCamera()" class="flex flex-col" style="height:100%;width:100%;">
                     <header class="section-header flex items-center justify-between" style="padding:0 2vh;direction:ltr;">
                         <div class="flex items-center"><img src="img/4.png" alt="Bosalati AI" style="height:7vh;"></div>
                         <div class="flex items-center" style="gap:1vh;">
@@ -297,19 +295,49 @@
                             <div x-show="cameraError" x-cloak class="absolute inset-0 flex flex-col items-center justify-center z-30" style="background:rgba(0,0,0,0.7);padding:3vh;">
                                 <span class="material-symbols-rounded text-primary" style="font-size:6vh;margin-bottom:2vh;">videocam_off</span>
                                 <p class="text-vh-base text-on-surface text-center font-bold" style="margin-bottom:1vh;" x-text="cameraError"></p>
+                                <p class="text-vh-xs text-center" style="color:#8B9E6B;"
+                                   x-text="locale==='ar'?'يرجى استخدام HTTPS للوصول إلى الكاميرا':'Please use HTTPS to access the camera'"></p>
                             </div>
                             <!-- Countdown -->
                             <div x-show="countdown > 0" x-cloak class="absolute inset-0 flex justify-center z-30 overflow-hidden"
                                  style="align-items:flex-end;padding-bottom:8vh;background:radial-gradient(circle,rgba(10,21,25,0.5) 0%,rgba(10,21,25,0.3) 100%);">
+
+                                <!-- Particle field (matches web) -->
+                                <div class="absolute inset-0 pointer-events-none">
+                                    <div class="countdown-particle" style="left:15%;top:25%;width:0.5vh;height:0.5vh;background:#D4622B;animation-delay:0.2s;animation-duration:2.8s;"></div>
+                                    <div class="countdown-particle" style="left:72%;top:18%;width:0.3vh;height:0.3vh;background:#E8A250;animation-delay:1.5s;animation-duration:3.2s;"></div>
+                                    <div class="countdown-particle" style="left:45%;top:60%;width:0.6vh;height:0.6vh;background:#8B9E6B;animation-delay:0.8s;animation-duration:2.5s;"></div>
+                                    <div class="countdown-particle" style="left:28%;top:80%;width:0.4vh;height:0.4vh;background:#3B6B5E;animation-delay:2.1s;animation-duration:3.8s;"></div>
+                                    <div class="countdown-particle" style="left:85%;top:45%;width:0.7vh;height:0.7vh;background:#A23050;animation-delay:0.5s;animation-duration:2.2s;"></div>
+                                    <div class="countdown-particle" style="left:55%;top:15%;width:0.4vh;height:0.4vh;background:#D4622B;animation-delay:1.8s;animation-duration:3.5s;"></div>
+                                    <div class="countdown-particle" style="left:10%;top:50%;width:0.5vh;height:0.5vh;background:#E8A250;animation-delay:0.3s;animation-duration:2.9s;"></div>
+                                    <div class="countdown-particle" style="left:90%;top:70%;width:0.3vh;height:0.3vh;background:#8B9E6B;animation-delay:2.5s;animation-duration:3.1s;"></div>
+                                    <div class="countdown-particle" style="left:35%;top:35%;width:0.6vh;height:0.6vh;background:#3B6B5E;animation-delay:1.2s;animation-duration:2.6s;"></div>
+                                    <div class="countdown-particle" style="left:65%;top:85%;width:0.4vh;height:0.4vh;background:#A23050;animation-delay:0.7s;animation-duration:3.4s;"></div>
+                                    <div class="countdown-particle" style="left:20%;top:12%;width:0.5vh;height:0.5vh;background:#D4622B;animation-delay:1.9s;animation-duration:2.3s;"></div>
+                                    <div class="countdown-particle" style="left:78%;top:55%;width:0.8vh;height:0.8vh;background:#E8A250;animation-delay:0.1s;animation-duration:3.9s;"></div>
+                                    <div class="countdown-particle" style="left:42%;top:72%;width:0.3vh;height:0.3vh;background:#8B9E6B;animation-delay:2.8s;animation-duration:2.7s;"></div>
+                                    <div class="countdown-particle" style="left:58%;top:40%;width:0.5vh;height:0.5vh;background:#3B6B5E;animation-delay:0.9s;animation-duration:3.6s;"></div>
+                                    <div class="countdown-particle" style="left:82%;top:28%;width:0.4vh;height:0.4vh;background:#A23050;animation-delay:1.6s;animation-duration:2.4s;"></div>
+                                    <div class="countdown-particle" style="left:30%;top:90%;width:0.6vh;height:0.6vh;background:#D4622B;animation-delay:2.3s;animation-duration:3.3s;"></div>
+                                    <div class="countdown-particle" style="left:50%;top:30%;width:0.7vh;height:0.7vh;background:#E8A250;animation-delay:0.4s;animation-duration:2.1s;"></div>
+                                    <div class="countdown-particle" style="left:18%;top:65%;width:0.3vh;height:0.3vh;background:#8B9E6B;animation-delay:1.3s;animation-duration:3.7s;"></div>
+                                    <div class="countdown-particle" style="left:70%;top:78%;width:0.5vh;height:0.5vh;background:#3B6B5E;animation-delay:2.0s;animation-duration:2.0s;"></div>
+                                    <div class="countdown-particle" style="left:88%;top:10%;width:0.4vh;height:0.4vh;background:#A23050;animation-delay:1.1s;animation-duration:3.0s;"></div>
+                                </div>
+
                                 <div class="relative flex items-center justify-center">
+                                    <!-- Outer pulse rings -->
                                     <div class="absolute rounded-full" style="width:18vh;height:18vh;border:1px solid rgba(212,98,43,0.1);animation:countdown-pulse 1s ease-out infinite;"></div>
                                     <div class="absolute rounded-full" style="width:21vh;height:21vh;border:1px solid rgba(232,162,80,0.08);animation:countdown-pulse 1s ease-out 0.3s infinite;"></div>
+                                    <!-- Rotating orbit ring -->
                                     <div class="absolute countdown-orbit" style="width:15vh;height:15vh;">
                                         <div class="absolute" style="top:0;left:50%;transform:translateX(-50%);width:0.7vh;height:0.7vh;border-radius:50%;background:#E8A250;box-shadow:0 0 6px #E8A250;"></div>
                                         <div class="absolute" style="bottom:0;left:50%;transform:translateX(-50%);width:0.5vh;height:0.5vh;border-radius:50%;background:#3B6B5E;box-shadow:0 0 4px #3B6B5E;"></div>
                                         <div class="absolute" style="top:50%;left:0;transform:translateY(-50%);width:0.6vh;height:0.6vh;border-radius:50%;background:#8B9E6B;box-shadow:0 0 4px #8B9E6B;"></div>
                                         <div class="absolute" style="top:50%;right:0;transform:translateY(-50%);width:0.5vh;height:0.5vh;border-radius:50%;background:#D4622B;box-shadow:0 0 4px #D4622B;"></div>
                                     </div>
+                                    <!-- SVG countdown ring -->
                                     <svg class="absolute" style="width:13vh;height:13vh;transform:rotate(-90deg);" viewBox="0 0 100 100">
                                         <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(59,107,94,0.15)" stroke-width="2"/>
                                         <circle cx="50" cy="50" r="45" fill="none" stroke-width="3" stroke-linecap="round"
@@ -318,6 +346,7 @@
                                                 :stroke-dashoffset="2*Math.PI*45*(1-countdown/5)"
                                                 style="transition:stroke-dashoffset 1s linear,stroke 0.3s ease;"/>
                                     </svg>
+                                    <!-- Inner circle -->
                                     <div class="relative flex items-center justify-center countdown-bobble"
                                          style="width:10vh;height:10vh;border-radius:50%;background:rgba(27,58,75,0.6);backdrop-filter:blur(20px);box-shadow:0 0 25px rgba(212,98,43,0.2),inset 0 0 15px rgba(0,0,0,0.3);">
                                         <div class="absolute inset-0 rounded-full countdown-shockwave"
@@ -326,6 +355,7 @@
                                               :style="'font-size:5vh;color:'+(countdown>3?'#3B6B5E':(countdown>1?'#E8A250':'#D4622B'))+';transition:color 0.3s ease;'"
                                               style="animation:countdown-pop 0.8s cubic-bezier(0.34,1.56,0.64,1);"></span>
                                     </div>
+                                    <!-- Corner brackets -->
                                     <div class="absolute countdown-brackets" style="width:14vh;height:14vh;">
                                         <div class="absolute" style="top:0;left:0;width:2vh;height:2vh;border-top:2px solid #8B9E6B;border-left:2px solid #8B9E6B;"></div>
                                         <div class="absolute" style="top:0;right:0;width:2vh;height:2vh;border-top:2px solid #8B9E6B;border-right:2px solid #8B9E6B;"></div>
@@ -341,7 +371,7 @@
                         <div class="flex items-center justify-center" style="gap:3vh;">
                             <template x-if="!photo">
                                 <button @click="captureWithCountdown()" class="gradient-primary transition-all active:scale-95 neon-glow" style="width:7vh;height:7vh;border-radius:50%;padding:0.4vh;">
-                                    <div class="w-full h-full rounded-full bg-white flex items-center justify-center">
+                                    <div class="w-full h-full rounded-full flex items-center justify-center" style="background:white;">
                                         <div class="gradient-primary" style="width:2vh;height:2vh;border-radius:50%;"></div>
                                     </div>
                                 </button>
@@ -377,10 +407,10 @@
 
             <!-- ==================== PROCESSING SCREEN ==================== -->
             <template x-if="screen === 'processing'">
-                <div class="flex flex-col h-full w-full">
+                <div class="flex flex-col" style="height:100%;width:100%;">
                     <!-- Processing state -->
                     <template x-if="processingStatus !== 'allDone'">
-                        <div class="flex flex-col h-full w-full">
+                        <div class="flex flex-col" style="height:100%;width:100%;">
                             <!-- Logo -->
                             <div class="flex items-center" style="padding:1vh 2vh;justify-content:left;">
                                 <img src="img/4.png" alt="Bosalati AI" style="height:7vh;">
@@ -409,7 +439,10 @@
                             <!-- MIDDLE: Video + Career Name (45%) -->
                             <div class="flex flex-col items-center justify-center" style="height:45%;padding:0 2vh;">
                                 <div class="w-full overflow-hidden relative" style="aspect-ratio:16/9;max-height:85%;border-radius:2vh;border:1px solid rgba(59,107,94,0.2);box-shadow:0 0 30px rgba(27,58,75,0.3);">
-                                    <video x-ref="processingVideo" autoplay muted playsinline loop class="w-full h-full object-cover">
+                                    <video x-ref="processingVideo"
+                                           @ended="onVideoEnded()"
+                                           autoplay muted playsinline
+                                           class="w-full h-full object-cover">
                                         <source src="video/processing.mp4" type="video/mp4">
                                     </video>
                                     <div class="absolute inset-0 pointer-events-none" style="background:linear-gradient(to bottom,rgba(15,30,38,0.3) 0%,transparent 30%,transparent 70%,rgba(15,30,38,0.3) 100%);"></div>
@@ -452,14 +485,14 @@
 
                     <!-- Completed state -->
                     <template x-if="processingStatus === 'allDone'">
-                        <div class="flex flex-col h-full w-full items-center overflow-y-auto scroll-hide">
+                        <div class="flex flex-col items-center overflow-y-auto scroll-hide" style="height:100%;width:100%;">
                             <div class="text-center shrink-0" style="border:2px solid rgba(212,98,43,0.3);border-radius:1.5vh;padding:0.8vh 2vh;margin:1vh 3vh 0;background:rgba(27,58,75,0.6);">
                                 <p class="text-vh-sm uppercase tracking-widest" style="color:#8B9E6B;"
                                    x-text="locale==='ar'?(gender==='female'?'المهنة الأنسب لكِ':'المهنة الأنسب لك'):'Your best-fit career'"></p>
                                 <h2 class="gradient-text-primary text-vh-xl font-body font-bold" style="margin-top:0.3vh;"
                                     x-text="locale==='ar'?matchedCareer?.name_ar:matchedCareer?.name_en"></h2>
                             </div>
-                            <div class="shrink-0 relative flex-1 flex items-center justify-center" style="margin:1.5vh 0;">
+                            <div class="shrink-0 relative flex items-center justify-center" style="flex:1;margin:1.5vh 0;">
                                 <div class="overflow-hidden relative" style="width:38vh;height:50vh;border-radius:2vh;border:2px solid rgba(59,107,94,0.3);box-shadow:0 0 40px rgba(212,98,43,0.15);">
                                     <img :src="generatedImageUrl || capturedPhoto" alt="Career Portrait" class="w-full h-full object-cover"/>
                                     <div class="absolute inset-x-0 text-center" style="bottom:0;padding:1vh 1.5vh;background:linear-gradient(to top,rgba(15,30,38,0.9),transparent);">
@@ -469,21 +502,62 @@
                             </div>
                             <div class="shrink-0 w-full" style="padding:0 3vh 6vh;">
                                 <div class="flex flex-col" style="gap:2vh;">
+                                    <!-- Download Image -->
                                     <button @click="downloadImage()" class="block text-center rounded-full font-body font-bold text-white transition-all active:scale-95"
-                                            style="background:linear-gradient(135deg,#D4622B,#E8A250);box-shadow:0 0 25px rgba(212,98,43,0.3);padding:1.5vh 0;font-size:1.8vh;">
+                                            style="width:100%;background:linear-gradient(135deg,#D4622B,#E8A250);box-shadow:0 0 25px rgba(212,98,43,0.3);padding:1.5vh 0;font-size:1.8vh;">
                                         <span class="material-symbols-rounded filled" style="font-size:2vh;vertical-align:middle;">download</span>
                                         <span x-text="locale==='ar'?(gender==='female'?'حمّلي صورتِك':'حمّل صورتك'):'Download Image'"></span>
                                     </button>
-                                    <button @click="goTo('capture')" class="block w-full text-center rounded-full font-body font-bold text-on-surface transition-all active:scale-95"
-                                            style="background:rgba(59,107,94,0.15);border:1.5px solid #3B6B5E;font-size:1.8vh;padding:1.5vh 0;">
+                                    <!-- Retake Photo (with confirmation modal) -->
+                                    <button @click="showRetake = true"
+                                       class="block text-center rounded-full font-body font-bold text-on-surface transition-all active:scale-95"
+                                       style="width:100%;background:rgba(59,107,94,0.15);border:1.5px solid #3B6B5E;font-size:1.8vh;padding:1.5vh 0;">
                                         <span class="material-symbols-rounded" style="font-size:2vh;color:#3B6B5E;vertical-align:middle;">photo_camera</span>
                                         <span x-text="locale==='ar'?'إعادة الالتقاط':'Retake Photo'"></span>
                                     </button>
-                                    <button @click="goTo('welcome');resetQuiz()" class="block w-full text-center rounded-full font-body font-bold transition-all active:scale-95"
-                                            style="color:#8B9E6B;border:1px solid rgba(139,158,107,0.25);background:transparent;font-size:1.8vh;padding:1.5vh 0;">
+                                    <!-- Start Over (with confirmation modal) -->
+                                    <button @click="showRestart = true"
+                                       class="block text-center rounded-full font-body font-bold transition-all active:scale-95"
+                                       style="width:100%;color:#8B9E6B;border:1px solid rgba(139,158,107,0.25);background:transparent;font-size:1.8vh;padding:1.5vh 0;">
                                         <span class="material-symbols-rounded" style="font-size:2vh;color:#8B9E6B;vertical-align:middle;">refresh</span>
                                         <span x-text="locale==='ar'?(gender==='female'?'ابدأي من جديد':'ابدأ من جديد'):'Start Over'"></span>
                                     </button>
+                                </div>
+
+                                <!-- Retake Modal (matches web) -->
+                                <div x-show="showRetake" x-cloak
+                                     class="modal-overlay" @click.self="showRetake = false">
+                                    <div class="modal-box" style="background:#1B3A4B;border:1px solid rgba(59,107,94,0.3);">
+                                        <span class="material-symbols-rounded" style="font-size:5vh;color:#3B6B5E;">photo_camera</span>
+                                        <p class="text-vh-base font-body font-bold text-on-surface text-center"
+                                           x-text="locale==='ar'?'هل تريد إعادة التقاط الصورة؟':'Retake your photo?'"></p>
+                                        <div class="flex w-full" style="gap:2vh;">
+                                            <button @click="showRetake = false" class="rounded-full font-body font-bold text-center transition-all active:scale-95"
+                                                    style="flex:1;padding:1.2vh 0;background:rgba(139,158,107,0.15);border:1px solid rgba(139,158,107,0.3);font-size:1.8vh;color:#8B9E6B;"
+                                                    x-text="locale==='ar'?'إلغاء':'Cancel'"></button>
+                                            <button @click="showRetake=false;goTo('capture')" class="rounded-full font-body font-bold text-white text-center transition-all active:scale-95"
+                                                    style="flex:1;padding:1.2vh 0;background:#3B6B5E;font-size:1.8vh;"
+                                                    x-text="locale==='ar'?'نعم':'Yes'"></button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Start Over Modal (matches web) -->
+                                <div x-show="showRestart" x-cloak
+                                     class="modal-overlay" @click.self="showRestart = false">
+                                    <div class="modal-box" style="background:#1B3A4B;border:1px solid rgba(212,98,43,0.3);">
+                                        <span class="material-symbols-rounded" style="font-size:5vh;color:#D4622B;">refresh</span>
+                                        <p class="text-vh-base font-body font-bold text-on-surface text-center"
+                                           x-text="locale==='ar'?'هل تريد البدء من جديد؟':'Start over from the beginning?'"></p>
+                                        <div class="flex w-full" style="gap:2vh;">
+                                            <button @click="showRestart = false" class="rounded-full font-body font-bold text-center transition-all active:scale-95"
+                                                    style="flex:1;padding:1.2vh 0;background:rgba(139,158,107,0.15);border:1px solid rgba(139,158,107,0.3);font-size:1.8vh;color:#8B9E6B;"
+                                                    x-text="locale==='ar'?'إلغاء':'Cancel'"></button>
+                                            <button @click="showRestart=false;goTo('welcome');resetQuiz()" class="rounded-full font-body font-bold text-white text-center transition-all active:scale-95"
+                                                    style="flex:1;padding:1.2vh 0;background:#D4622B;font-size:1.8vh;"
+                                                    x-text="locale==='ar'?'نعم':'Yes'"></button>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -494,10 +568,10 @@
 
             <!-- ==================== RESULT SCREEN ==================== -->
             <template x-if="screen === 'result'">
-                <div class="flex flex-col h-full w-full">
+                <div class="flex flex-col" style="height:100%;width:100%;">
                     <div class="section-header flex items-center animate-fade-in-up" style="padding:0 2vh;direction:ltr;">
                         <img src="img/4.png" alt="Bosalati AI" style="height:7vh;">
-                        <div class="flex-1 text-center" style="border:2px solid rgba(212,98,43,0.3);border-radius:1.5vh;padding:0.8vh 2vh;background:rgba(27,58,75,0.6);">
+                        <div class="text-center" style="flex:1;border:2px solid rgba(212,98,43,0.3);border-radius:1.5vh;padding:0.8vh 2vh;background:rgba(27,58,75,0.6);">
                             <p class="text-vh-sm font-body font-bold text-on-surface"
                                x-text="locale==='ar'?(gender==='female'?'المهنة الأنسب لكِ هي:':'المهنة الأنسب لك هي:'):'Your best-fit career is:'"></p>
                             <p class="gradient-text-primary text-vh-lg uppercase font-body font-extrabold"
@@ -506,7 +580,7 @@
                     </div>
 
                     <div class="section-content flex flex-col overflow-hidden">
-                        <div class="flex-1 flex items-center justify-center animate-fade-in-up delay-200">
+                        <div class="flex items-center justify-center animate-fade-in-up delay-200" style="flex:1;">
                             <div class="relative flex items-center justify-center">
                                 <div class="absolute rounded-full animate-pulse" style="width:26vh;height:26vh;background:rgba(212,98,43,0.2);filter:blur(50px);"></div>
                                 <div class="relative overflow-hidden flex items-center justify-center" style="background:var(--color-surface-high);border-radius:2rem;border:1px solid rgba(255,255,255,0.05);width:20vh;aspect-ratio:2/3;box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);">
@@ -518,7 +592,7 @@
                             </div>
                         </div>
 
-                        <div class="flex-1 flex flex-col justify-center" style="gap:1vh;padding:1vh 2vh;">
+                        <div class="flex flex-col justify-center" style="flex:1;gap:1vh;padding:1vh 2vh;">
                             <div class="glass-card border animate-fade-in-up delay-600" style="border-radius:1.5vh;padding:1.5vh;border-color:rgba(255,255,255,0.05);">
                                 <div class="flex items-center" style="gap:0.5rem;margin-bottom:0.3vh;">
                                     <span class="material-symbols-rounded filled text-tertiary" style="font-size:2vh;">location_on</span>
@@ -537,18 +611,18 @@
                     </div>
 
                     <div class="section-footer flex flex-col items-center justify-center animate-fade-in-up delay-800" style="gap:1.5vh;padding:0 2vh;">
-                        <button @click="goTo('welcome');resetQuiz()" class="w-full gradient-primary shadow-xl active:scale-95 transition-transform flex items-center justify-center text-on-primary font-body font-bold"
+                        <button @click="goTo('welcome');resetQuiz()" class="w-full gradient-primary shadow-xl active:scale-95 transition-all flex items-center justify-center text-on-primary font-body font-bold"
                                 style="padding:1.5vh 0;font-size:2vh;border-radius:1rem;gap:0.75rem;">
                             <span x-text="locale==='ar'?'ابدأ من جديد':'Start Over'"></span>
                             <span class="material-symbols-rounded filled" style="font-size:2.5vh;">rocket_launch</span>
                         </button>
                         <div class="flex items-center justify-center" style="gap:3vh;">
-                            <button @click="goTo('home');resetQuiz()" class="flex items-center text-on-surface-variant hover:text-primary transition-colors text-vh-2xs uppercase tracking-wider" style="gap:0.25rem;">
+                            <button @click="goTo('home');resetQuiz()" class="flex items-center transition-all text-vh-2xs uppercase tracking-wider" style="gap:0.25rem;color:#8B9E6B;">
                                 <span class="material-symbols-rounded filled text-vh-xs">home</span>
                                 <span x-text="locale==='ar'?'الرئيسية':'Home'"></span>
                             </button>
                             <div style="width:1px;height:2vh;background:rgba(255,255,255,0.1);"></div>
-                            <button @click="shareImage()" class="flex items-center text-on-surface-variant hover:text-primary transition-colors text-vh-2xs uppercase tracking-wider" style="gap:0.25rem;">
+                            <button @click="shareImage()" class="flex items-center transition-all text-vh-2xs uppercase tracking-wider" style="gap:0.25rem;color:#8B9E6B;">
                                 <span class="material-symbols-rounded filled text-vh-xs">share</span>
                                 <span x-text="locale==='ar'?'مشاركة':'Share'"></span>
                             </button>

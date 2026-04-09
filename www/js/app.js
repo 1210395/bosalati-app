@@ -128,6 +128,12 @@ function bosalatiApp() {
         processingError: null,
         processingMsgIndex: 0,
         processingStatus: 'idle',
+        // Dual completion flags — match web behavior
+        generationDone: false,
+        videoDone: false,
+        // Modal state
+        showRetake: false,
+        showRestart: false,
         _processingInterval: null,
         _msgInterval: null,
 
@@ -210,6 +216,10 @@ function bosalatiApp() {
             this.processingProgress = 0;
             this.processingError = null;
             this.processingStatus = 'idle';
+            this.generationDone = false;
+            this.videoDone = false;
+            this.showRetake = false;
+            this.showRestart = false;
             if (this._processingInterval) clearInterval(this._processingInterval);
             if (this._msgInterval) clearInterval(this._msgInterval);
         },
@@ -234,12 +244,14 @@ function bosalatiApp() {
             this.screen = 'capture';
         },
 
-        // ---- AI Image Generation ----
+        // ---- AI Image Generation (matches web dual-completion) ----
         async startGeneration() {
             this.processingProgress = 5;
             this.processingError = null;
             this.processingStatus = 'processing';
             this.processingMsgIndex = 0;
+            this.generationDone = false;
+            this.videoDone = false;
 
             this._msgInterval = setInterval(() => {
                 this.processingMsgIndex = (this.processingMsgIndex + 1) % this.processingMessages.length;
@@ -257,7 +269,6 @@ function bosalatiApp() {
             }, 2000);
 
             try {
-                // Sync call matching the original Laravel backend exactly
                 const response = await fetch(FAL_AI_ENDPOINT, {
                     method: 'POST',
                     headers: {
@@ -283,8 +294,8 @@ function bosalatiApp() {
 
                 if (data.images && data.images.length > 0 && data.images[0].url) {
                     this.generatedImageUrl = data.images[0].url;
-                    this.processingProgress = 100;
-                    this.finishGeneration();
+                    this.generationDone = true;
+                    this.checkAllDone();
                 } else {
                     throw new Error('No image in response: ' + JSON.stringify(data));
                 }
@@ -296,10 +307,23 @@ function bosalatiApp() {
             }
         },
 
-        finishGeneration() {
-            if (this._msgInterval) clearInterval(this._msgInterval);
-            BosalatiSounds.success();
-            this.processingStatus = 'allDone';
+        // Called when the processing video finishes playing
+        onVideoEnded() {
+            this.videoDone = true;
+            this.checkAllDone();
+        },
+
+        // Transition to allDone only when BOTH video and generation complete (matches web)
+        checkAllDone() {
+            if (this.generationDone && this.videoDone) {
+                this.processingProgress = 100;
+                if (this._msgInterval) clearInterval(this._msgInterval);
+                BosalatiSounds.success();
+                this.processingStatus = 'allDone';
+            } else if (this.generationDone && !this.videoDone) {
+                // Generation done but video still playing
+                this.processingProgress = 90;
+            }
         },
 
         async downloadImage() {
@@ -349,7 +373,7 @@ function bosalatiApp() {
 }
 
 // =============================================
-// Camera Component - with proper Android permission handling
+// Camera Component — robust USB/external camera support
 // =============================================
 function cameraComponent() {
     return {
@@ -358,91 +382,91 @@ function cameraComponent() {
         isCameraReady: false,
         cameraError: null,
         countdown: 0,
-
-        async requestCameraPermission() {
-            // For Capacitor/Android: request permission through the Permissions API first
-            try {
-                // Try Capacitor Camera plugin permission if available
-                if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Camera) {
-                    const permResult = await window.Capacitor.Plugins.Camera.requestPermissions({ permissions: ['camera'] });
-                    console.log('Capacitor camera permission:', permResult);
-                }
-            } catch (e) {
-                console.log('Capacitor permission request not available, using navigator directly');
-            }
-
-            // Also try the Permissions API
-            try {
-                if (navigator.permissions) {
-                    const result = await navigator.permissions.query({ name: 'camera' });
-                    console.log('Camera permission state:', result.state);
-                }
-            } catch (e) {
-                console.log('Permissions API not available');
-            }
-
-            // Now init camera
-            await this.initCamera();
-        },
+        _countdownInterval: null,
 
         async initCamera() {
             try {
+                // Wait for DOM to be fully ready (prevents null $refs in x-if templates)
+                await new Promise(r => setTimeout(r, 100));
+
                 if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                    this.cameraError = this.$data.locale === 'ar'
+                    this.cameraError = this.$data?.locale === 'ar'
                         ? 'الكاميرا غير متوفرة في هذا المتصفح'
                         : 'Camera not supported in this browser';
                     return;
                 }
 
-                // Try to get camera - first try user-facing, then fall back to any camera (for USB/external)
                 let stream = null;
-                try {
-                    stream = await navigator.mediaDevices.getUserMedia({
-                        video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
-                        audio: false
-                    });
-                } catch (firstErr) {
-                    console.log('Front camera failed, trying any available camera:', firstErr.message);
-                    // Fallback: try any available camera (USB/external cameras on Android TV)
+
+                // Try multiple constraint sets — crucial for USB/external cameras (Fantech on TV)
+                const constraintSets = [
+                    // 1. Front camera (phones)
+                    { video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false },
+                    // 2. Any camera without facingMode (USB/external cameras)
+                    { video: { width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false },
+                    // 3. Minimal constraints (fallback)
+                    { video: true, audio: false }
+                ];
+
+                for (const constraints of constraintSets) {
                     try {
-                        stream = await navigator.mediaDevices.getUserMedia({
-                            video: { width: { ideal: 1280 }, height: { ideal: 720 } },
-                            audio: false
-                        });
-                    } catch (secondErr) {
-                        // Last resort: enumerate devices and try the first video input
+                        stream = await navigator.mediaDevices.getUserMedia(constraints);
+                        console.log('Camera acquired with constraints:', JSON.stringify(constraints));
+                        break;
+                    } catch (e) {
+                        console.log('Camera constraint failed:', e.name, e.message);
+                        continue;
+                    }
+                }
+
+                // Last resort: enumerate devices and try the first video input by deviceId
+                if (!stream) {
+                    try {
                         const devices = await navigator.mediaDevices.enumerateDevices();
                         const videoDevices = devices.filter(d => d.kind === 'videoinput');
-                        console.log('Available video devices:', videoDevices);
+                        console.log('Available video devices:', videoDevices.map(d => d.label || d.deviceId));
                         if (videoDevices.length > 0) {
                             stream = await navigator.mediaDevices.getUserMedia({
                                 video: { deviceId: { exact: videoDevices[0].deviceId } },
                                 audio: false
                             });
-                        } else {
-                            throw secondErr;
                         }
+                    } catch (e) {
+                        console.error('Device enumeration fallback failed:', e);
                     }
                 }
+
+                if (!stream) {
+                    throw new Error('No camera could be accessed');
+                }
+
                 this.stream = stream;
 
+                // Safely attach to video element
                 const video = this.$refs.video;
                 if (video) {
-                    video.srcObject = this.stream;
+                    video.srcObject = stream;
                     video.setAttribute('autoplay', '');
                     video.setAttribute('playsinline', '');
                     video.setAttribute('muted', '');
-                    await video.play().catch(() => {});
+                    try {
+                        await video.play();
+                    } catch (playErr) {
+                        console.warn('Video play() failed (autoplay may handle it):', playErr.message);
+                    }
+                } else {
+                    console.warn('Video ref not available yet, stream is attached but not playing');
                 }
+
                 this.isCameraReady = true;
             } catch (err) {
-                console.error('Camera error:', err);
+                console.error('Camera init error:', err);
                 if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-                    this.cameraError = this.$data.locale === 'ar'
+                    this.cameraError = this.$data?.locale === 'ar'
                         ? 'يرجى السماح بالوصول إلى الكاميرا من إعدادات التطبيق'
                         : 'Please allow camera access in app settings';
                 } else {
-                    this.cameraError = this.$data.locale === 'ar'
+                    this.cameraError = this.$data?.locale === 'ar'
                         ? 'فشل الوصول إلى الكاميرا: ' + err.message
                         : 'Camera access failed: ' + err.message;
                 }
@@ -450,12 +474,14 @@ function cameraComponent() {
         },
 
         captureWithCountdown() {
+            if (this._countdownInterval) clearInterval(this._countdownInterval);
             this.countdown = 5;
             BosalatiSounds.tick();
-            const interval = setInterval(() => {
+            this._countdownInterval = setInterval(() => {
                 this.countdown--;
                 if (this.countdown <= 0) {
-                    clearInterval(interval);
+                    clearInterval(this._countdownInterval);
+                    this._countdownInterval = null;
                     BosalatiSounds.tickFinal();
                     this.capture();
                 } else {
@@ -467,6 +493,8 @@ function cameraComponent() {
         capture() {
             BosalatiSounds.shutter();
             const video = this.$refs.video;
+            if (!video || !video.videoWidth) return;
+
             const canvas = document.createElement('canvas');
             const targetRatio = 2 / 3;
             const videoRatio = video.videoWidth / video.videoHeight;
@@ -481,6 +509,7 @@ function cameraComponent() {
             canvas.width = 768;
             canvas.height = 1024;
             const ctx = canvas.getContext('2d');
+            // Mirror the image (front camera style)
             ctx.translate(canvas.width, 0);
             ctx.scale(-1, 1);
             ctx.drawImage(video, sx, sy, sw, sh, 0, 0, 768, 1024);
@@ -491,7 +520,6 @@ function cameraComponent() {
 
         submitPhoto() {
             BosalatiSounds.click();
-            // Access parent component data via Alpine's magic
             const app = Alpine.closestDataStack(this.$el).find(d => d.capturedPhoto !== undefined);
             if (app) {
                 app.capturedPhoto = this.photo;
@@ -502,6 +530,10 @@ function cameraComponent() {
         },
 
         stopCamera() {
+            if (this._countdownInterval) {
+                clearInterval(this._countdownInterval);
+                this._countdownInterval = null;
+            }
             if (this.stream) {
                 this.stream.getTracks().forEach(track => track.stop());
                 this.stream = null;
