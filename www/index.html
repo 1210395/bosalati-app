@@ -98,10 +98,14 @@
                             <span class="material-symbols-rounded filled" style="font-size:2.2vh;">rocket_launch</span>
                             <span x-text="t('lets_start')"></span>
                         </button>
-                        <div class="flex items-center justify-center">
+                        <div class="flex items-center justify-center" style="gap:2vh;">
                             <button @click="toggleLocale()" class="text-vh-xs transition-all flex items-center" style="color:#8B9E6B;gap:0.5vh;">
                                 <span class="material-symbols-rounded icon-vh-xs">language</span>
                                 <span x-text="locale==='ar'?'English':'العربية'"></span>
+                            </button>
+                            <button onclick="if(window.DebugLog)DebugLog.toggle();" class="text-vh-xs flex items-center" style="color:#555;gap:0.3vh;">
+                                <span class="material-symbols-rounded" style="font-size:1.5vh;">bug_report</span>
+                                <span>Debug Log</span>
                             </button>
                         </div>
                     </footer>

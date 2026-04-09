@@ -138,6 +138,31 @@ const DebugLog = (() => {
 window.DebugLog = DebugLog;
 
 // =============================================
+// Read native log injected by MainActivity into window._nativeLog
+// =============================================
+function readNativeLog() {
+    if (window._nativeLog) {
+        DebugLog.info('=== NATIVE LOG ===');
+        window._nativeLog.split('\\n').forEach(line => {
+            if (!line.trim()) return;
+            if (line.includes('CRASH') || line.includes('ERROR')) {
+                DebugLog.error('NATIVE: ' + line);
+            } else {
+                DebugLog.ok('NATIVE: ' + line);
+            }
+        });
+        DebugLog.info('=== END NATIVE LOG ===');
+    } else {
+        DebugLog.info('No native log injected yet (window._nativeLog not set)');
+    }
+}
+
+// Check for native log after Capacitor injects it
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(readNativeLog, 2000);
+});
+
+// =============================================
 // Global error catchers
 // =============================================
 window.onerror = function(msg, url, line, col, error) {
