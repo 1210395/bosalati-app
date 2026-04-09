@@ -7,6 +7,143 @@ const FAL_AI_API_KEY = 'e299769e-3103-43e6-ae21-bcd1b4fb8283:dac09f32773e0be9b2b
 const FAL_AI_ENDPOINT = 'https://fal.run/fal-ai/flux-2-pro/edit';
 
 // =============================================
+// DEBUG LOGGER — visible on-screen overlay
+// =============================================
+const DebugLog = (() => {
+    const logs = [];
+    let overlay = null;
+    let logEl = null;
+    let visible = false;
+
+    function createOverlay() {
+        if (overlay) return;
+        overlay = document.createElement('div');
+        overlay.id = 'debug-overlay';
+        overlay.style.cssText = `
+            position:fixed; top:0; left:0; right:0; bottom:0; z-index:99999;
+            background:rgba(0,0,0,0.92); color:#0f0; font-family:monospace;
+            font-size:11px; padding:10px; overflow-y:auto; display:none;
+            white-space:pre-wrap; word-break:break-all; line-height:1.5;
+            -webkit-user-select:text; user-select:text;
+        `;
+        // Close button
+        const closeBtn = document.createElement('div');
+        closeBtn.style.cssText = `
+            position:sticky; top:0; background:#333; color:#ff0; padding:8px 16px;
+            text-align:center; cursor:pointer; font-size:14px; border-radius:4px;
+            margin-bottom:8px; z-index:1;
+        `;
+        closeBtn.textContent = '[ CLOSE DEBUG LOG ] — tap to close';
+        closeBtn.onclick = () => { overlay.style.display = 'none'; visible = false; };
+        overlay.appendChild(closeBtn);
+
+        // Copy button
+        const copyBtn = document.createElement('div');
+        copyBtn.style.cssText = `
+            position:sticky; top:40px; background:#060; color:#fff; padding:6px 12px;
+            text-align:center; cursor:pointer; font-size:12px; border-radius:4px;
+            margin-bottom:8px;
+        `;
+        copyBtn.textContent = '[ COPY ALL LOGS ]';
+        copyBtn.onclick = () => {
+            const text = logs.map(l => l.text).join('\n');
+            try {
+                navigator.clipboard.writeText(text);
+                copyBtn.textContent = '[ COPIED! ]';
+                setTimeout(() => { copyBtn.textContent = '[ COPY ALL LOGS ]'; }, 1500);
+            } catch(e) {
+                // fallback: select text
+                const range = document.createRange();
+                range.selectNodeContents(logEl);
+                window.getSelection().removeAllRanges();
+                window.getSelection().addRange(range);
+            }
+        };
+        overlay.appendChild(copyBtn);
+
+        logEl = document.createElement('div');
+        logEl.id = 'debug-log-content';
+        overlay.appendChild(logEl);
+        document.body.appendChild(overlay);
+    }
+
+    function show() {
+        createOverlay();
+        overlay.style.display = 'block';
+        visible = true;
+    }
+
+    function addEntry(level, ...args) {
+        const ts = new Date().toISOString().substr(11, 12);
+        const msg = args.map(a => {
+            if (typeof a === 'object') {
+                try { return JSON.stringify(a, null, 0); }
+                catch(e) { return String(a); }
+            }
+            return String(a);
+        }).join(' ');
+
+        const colors = { INFO: '#0f0', WARN: '#ff0', ERROR: '#f44', STEP: '#0af', OK: '#4f4' };
+        const entry = { text: `[${ts}] ${level}: ${msg}`, level };
+        logs.push(entry);
+
+        // Also save to localStorage for persistence
+        try {
+            localStorage.setItem('bosalati_debug_log', logs.map(l => l.text).join('\n'));
+        } catch(e) {}
+
+        // Update overlay if it exists
+        if (logEl) {
+            const line = document.createElement('div');
+            line.style.color = colors[level] || '#fff';
+            line.textContent = entry.text;
+            logEl.appendChild(line);
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        // Also console.log
+        const fn = level === 'ERROR' ? console.error : level === 'WARN' ? console.warn : console.log;
+        fn(`[DebugLog:${level}]`, ...args);
+    }
+
+    return {
+        info: (...args) => addEntry('INFO', ...args),
+        warn: (...args) => addEntry('WARN', ...args),
+        error: (...args) => addEntry('ERROR', ...args),
+        step: (...args) => addEntry('STEP', ...args),
+        ok: (...args) => addEntry('OK', ...args),
+        show,
+        hide: () => { if (overlay) overlay.style.display = 'none'; visible = false; },
+        toggle: () => { visible ? DebugLog.hide() : DebugLog.show(); },
+        isVisible: () => visible,
+        getLogs: () => logs.map(l => l.text).join('\n'),
+    };
+})();
+
+// Make globally accessible
+window.DebugLog = DebugLog;
+
+// =============================================
+// Global error catchers
+// =============================================
+window.onerror = function(msg, url, line, col, error) {
+    DebugLog.error('UNCAUGHT:', msg, 'at', url + ':' + line + ':' + col);
+    if (error && error.stack) DebugLog.error('Stack:', error.stack);
+    DebugLog.show(); // Auto-show on crash
+    return false;
+};
+
+window.addEventListener('unhandledrejection', function(event) {
+    DebugLog.error('UNHANDLED PROMISE:', event.reason);
+    if (event.reason && event.reason.stack) DebugLog.error('Stack:', event.reason.stack);
+    DebugLog.show(); // Auto-show on crash
+});
+
+DebugLog.info('App script loaded. UserAgent:', navigator.userAgent);
+DebugLog.info('Protocol:', window.location.protocol, 'Host:', window.location.host);
+DebugLog.info('Screen:', screen.width + 'x' + screen.height, 'DPR:', window.devicePixelRatio);
+
+// =============================================
 // Sound Effects (Web Audio API)
 // =============================================
 const BosalatiSounds = (() => {
@@ -170,6 +307,7 @@ function bosalatiApp() {
 
         goTo(screen) {
             BosalatiSounds.click();
+            DebugLog.info('Navigate to:', screen);
             this.screen = screen;
         },
 
@@ -241,6 +379,7 @@ function bosalatiApp() {
             if (!career) career = this.careers[Math.floor(Math.random() * this.careers.length)];
 
             this.matchedCareer = career;
+            DebugLog.info('Career matched:', career.name_en, '(' + career.riasec_code + ')');
             this.screen = 'capture';
         },
 
@@ -269,6 +408,7 @@ function bosalatiApp() {
             }, 2000);
 
             try {
+                DebugLog.step('Starting Fal.ai generation...');
                 const response = await fetch(FAL_AI_ENDPOINT, {
                     method: 'POST',
                     headers: {
@@ -290,7 +430,7 @@ function bosalatiApp() {
                 }
 
                 const data = await response.json();
-                console.log('Fal.ai response:', data);
+                DebugLog.ok('Fal.ai response received');
 
                 if (data.images && data.images.length > 0 && data.images[0].url) {
                     this.generatedImageUrl = data.images[0].url;
@@ -301,7 +441,7 @@ function bosalatiApp() {
                 }
             } catch (err) {
                 clearInterval(this._processingInterval);
-                console.error('Generation error:', err);
+                DebugLog.error('Generation error:', err.message);
                 if (this._msgInterval) clearInterval(this._msgInterval);
                 this.processingError = err.message;
             }
@@ -373,7 +513,7 @@ function bosalatiApp() {
 }
 
 // =============================================
-// Camera Component — robust USB/external camera support
+// Camera Component — with full debug logging
 // =============================================
 function cameraComponent() {
     return {
@@ -385,95 +525,173 @@ function cameraComponent() {
         _countdownInterval: null,
 
         async initCamera() {
+            DebugLog.step('=== CAMERA INIT START ===');
+
             try {
-                // Wait for DOM to be fully ready (prevents null $refs in x-if templates)
-                await new Promise(r => setTimeout(r, 100));
+                // Step 1: Wait for DOM
+                DebugLog.step('Step 1: Waiting 300ms for DOM...');
+                await new Promise(r => setTimeout(r, 300));
+                DebugLog.ok('Step 1: DOM wait done');
+
+                // Step 2: Check APIs
+                DebugLog.step('Step 2: Checking mediaDevices API...');
+                DebugLog.info('navigator.mediaDevices exists:', !!navigator.mediaDevices);
+                DebugLog.info('getUserMedia exists:', !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia));
+                DebugLog.info('enumerateDevices exists:', !!(navigator.mediaDevices && navigator.mediaDevices.enumerateDevices));
 
                 if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                    this.cameraError = this.$data?.locale === 'ar'
-                        ? 'الكاميرا غير متوفرة في هذا المتصفح'
-                        : 'Camera not supported in this browser';
+                    DebugLog.error('Step 2: FAILED — getUserMedia not available');
+                    DebugLog.info('window.location.protocol:', window.location.protocol);
+                    DebugLog.info('Is HTTPS needed? Capacitor uses:', window.location.protocol);
+                    this.cameraError = 'Camera API not available (getUserMedia missing). Protocol: ' + window.location.protocol;
+                    DebugLog.show();
+                    return;
+                }
+                DebugLog.ok('Step 2: mediaDevices API available');
+
+                // Step 3: Enumerate devices first
+                DebugLog.step('Step 3: Enumerating video devices...');
+                let videoDevices = [];
+                try {
+                    const allDevices = await navigator.mediaDevices.enumerateDevices();
+                    videoDevices = allDevices.filter(d => d.kind === 'videoinput');
+                    DebugLog.info('Total devices found:', allDevices.length);
+                    DebugLog.info('Video devices found:', videoDevices.length);
+                    videoDevices.forEach((d, i) => {
+                        DebugLog.info(`  Camera ${i}: "${d.label || '(no label)'}" id=${d.deviceId.substr(0, 16)}...`);
+                    });
+                } catch (enumErr) {
+                    DebugLog.warn('Step 3: enumerateDevices failed:', enumErr.name, enumErr.message);
+                }
+
+                // Step 4: Try to get camera stream
+                DebugLog.step('Step 4: Requesting camera stream...');
+                let stream = null;
+
+                const constraintSets = [
+                    { label: 'facingMode:user + 1280x720', constraints: { video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false } },
+                    { label: 'generic 1280x720', constraints: { video: { width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false } },
+                    { label: 'video:true (minimal)', constraints: { video: true, audio: false } },
+                ];
+
+                // If we found devices, also add deviceId-specific attempts
+                videoDevices.forEach((d, i) => {
+                    constraintSets.push({
+                        label: `deviceId[${i}]: "${d.label || d.deviceId.substr(0, 16)}"`,
+                        constraints: { video: { deviceId: { exact: d.deviceId } }, audio: false }
+                    });
+                });
+
+                for (let i = 0; i < constraintSets.length; i++) {
+                    const { label, constraints } = constraintSets[i];
+                    DebugLog.step(`  Attempt ${i + 1}/${constraintSets.length}: ${label}`);
+                    try {
+                        stream = await navigator.mediaDevices.getUserMedia(constraints);
+                        const tracks = stream.getVideoTracks();
+                        DebugLog.ok(`  SUCCESS! Got stream with ${tracks.length} video track(s)`);
+                        tracks.forEach((t, ti) => {
+                            const settings = t.getSettings ? t.getSettings() : {};
+                            DebugLog.info(`    Track ${ti}: "${t.label}" state=${t.readyState} enabled=${t.enabled}`);
+                            DebugLog.info(`    Settings: ${settings.width}x${settings.height} facing=${settings.facingMode || 'n/a'} fps=${settings.frameRate || 'n/a'}`);
+                        });
+                        break;
+                    } catch (e) {
+                        DebugLog.warn(`  FAILED: ${e.name}: ${e.message}`);
+                        stream = null;
+                    }
+                }
+
+                if (!stream) {
+                    DebugLog.error('Step 4: ALL camera attempts failed!');
+                    this.cameraError = 'No camera could be accessed after ' + constraintSets.length + ' attempts. Check debug log.';
+                    DebugLog.show();
                     return;
                 }
 
-                let stream = null;
-
-                // Try multiple constraint sets — crucial for USB/external cameras (Fantech on TV)
-                const constraintSets = [
-                    // 1. Front camera (phones)
-                    { video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false },
-                    // 2. Any camera without facingMode (USB/external cameras)
-                    { video: { width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false },
-                    // 3. Minimal constraints (fallback)
-                    { video: true, audio: false }
-                ];
-
-                for (const constraints of constraintSets) {
-                    try {
-                        stream = await navigator.mediaDevices.getUserMedia(constraints);
-                        console.log('Camera acquired with constraints:', JSON.stringify(constraints));
-                        break;
-                    } catch (e) {
-                        console.log('Camera constraint failed:', e.name, e.message);
-                        continue;
-                    }
-                }
-
-                // Last resort: enumerate devices and try the first video input by deviceId
-                if (!stream) {
-                    try {
-                        const devices = await navigator.mediaDevices.enumerateDevices();
-                        const videoDevices = devices.filter(d => d.kind === 'videoinput');
-                        console.log('Available video devices:', videoDevices.map(d => d.label || d.deviceId));
-                        if (videoDevices.length > 0) {
-                            stream = await navigator.mediaDevices.getUserMedia({
-                                video: { deviceId: { exact: videoDevices[0].deviceId } },
-                                audio: false
-                            });
-                        }
-                    } catch (e) {
-                        console.error('Device enumeration fallback failed:', e);
-                    }
-                }
-
-                if (!stream) {
-                    throw new Error('No camera could be accessed');
-                }
-
                 this.stream = stream;
+                DebugLog.ok('Step 4: Camera stream acquired');
 
-                // Safely attach to video element
+                // Step 5: Attach to video element
+                DebugLog.step('Step 5: Attaching stream to video element...');
                 const video = this.$refs.video;
+                DebugLog.info('video element exists:', !!video);
                 if (video) {
+                    DebugLog.info('video element tag:', video.tagName);
+                    DebugLog.info('video dimensions:', video.clientWidth + 'x' + video.clientHeight);
+                    DebugLog.info('video display:', window.getComputedStyle(video).display);
+                    DebugLog.info('video visibility:', window.getComputedStyle(video).visibility);
+
                     video.srcObject = stream;
+                    DebugLog.ok('srcObject assigned');
+
                     video.setAttribute('autoplay', '');
                     video.setAttribute('playsinline', '');
                     video.setAttribute('muted', '');
+
+                    // Listen for video events
+                    video.onloadedmetadata = () => {
+                        DebugLog.ok('Video metadata loaded: ' + video.videoWidth + 'x' + video.videoHeight);
+                    };
+                    video.onplaying = () => {
+                        DebugLog.ok('Video is PLAYING: ' + video.videoWidth + 'x' + video.videoHeight);
+                    };
+                    video.onerror = (e) => {
+                        DebugLog.error('Video element error:', e);
+                        DebugLog.show();
+                    };
+
+                    DebugLog.step('Step 5b: Calling video.play()...');
                     try {
                         await video.play();
+                        DebugLog.ok('video.play() resolved. videoWidth=' + video.videoWidth + ' videoHeight=' + video.videoHeight);
                     } catch (playErr) {
-                        console.warn('Video play() failed (autoplay may handle it):', playErr.message);
+                        DebugLog.warn('video.play() rejected:', playErr.name, playErr.message);
+                        DebugLog.info('This may be OK if autoplay attribute handles it.');
                     }
                 } else {
-                    console.warn('Video ref not available yet, stream is attached but not playing');
+                    DebugLog.error('Step 5: video $refs.video is NULL! Alpine template may not have rendered.');
+                    this.cameraError = 'Video element not found in DOM. Ref is null.';
+                    DebugLog.show();
+                    return;
                 }
 
                 this.isCameraReady = true;
+                DebugLog.ok('=== CAMERA INIT COMPLETE ===');
+
+                // Log video state after a delay to check if it's actually rendering
+                setTimeout(() => {
+                    if (video) {
+                        DebugLog.info('Video state after 2s: readyState=' + video.readyState +
+                            ' paused=' + video.paused + ' ended=' + video.ended +
+                            ' videoWidth=' + video.videoWidth + ' videoHeight=' + video.videoHeight +
+                            ' currentTime=' + video.currentTime.toFixed(2));
+                        if (video.videoWidth === 0 || video.videoHeight === 0) {
+                            DebugLog.warn('VIDEO DIMENSIONS ARE 0 — camera feed is BLACK');
+                            DebugLog.warn('This usually means: permission denied at WebView level, or stream has no active video track');
+                            const tracks = this.stream ? this.stream.getVideoTracks() : [];
+                            tracks.forEach((t, i) => {
+                                DebugLog.info(`Track ${i} state: readyState=${t.readyState} enabled=${t.enabled} muted=${t.muted}`);
+                            });
+                        }
+                    }
+                }, 2000);
+
             } catch (err) {
-                console.error('Camera init error:', err);
+                DebugLog.error('=== CAMERA INIT CRASHED ===');
+                DebugLog.error('Error:', err.name, err.message);
+                if (err.stack) DebugLog.error('Stack:', err.stack);
+                DebugLog.show();
+
                 if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-                    this.cameraError = this.$data?.locale === 'ar'
-                        ? 'يرجى السماح بالوصول إلى الكاميرا من إعدادات التطبيق'
-                        : 'Please allow camera access in app settings';
+                    this.cameraError = 'Camera permission denied. Error: ' + err.message;
                 } else {
-                    this.cameraError = this.$data?.locale === 'ar'
-                        ? 'فشل الوصول إلى الكاميرا: ' + err.message
-                        : 'Camera access failed: ' + err.message;
+                    this.cameraError = 'Camera failed: ' + err.name + ': ' + err.message;
                 }
             }
         },
 
         captureWithCountdown() {
+            DebugLog.step('Capture countdown started');
             if (this._countdownInterval) clearInterval(this._countdownInterval);
             this.countdown = 5;
             BosalatiSounds.tick();
@@ -491,34 +709,61 @@ function cameraComponent() {
         },
 
         capture() {
+            DebugLog.step('Capturing photo...');
             BosalatiSounds.shutter();
             const video = this.$refs.video;
-            if (!video || !video.videoWidth) return;
 
-            const canvas = document.createElement('canvas');
-            const targetRatio = 2 / 3;
-            const videoRatio = video.videoWidth / video.videoHeight;
-            let sx, sy, sw, sh;
-            if (videoRatio > targetRatio) {
-                sh = video.videoHeight; sw = sh * targetRatio;
-                sx = (video.videoWidth - sw) / 2; sy = 0;
-            } else {
-                sw = video.videoWidth; sh = sw / targetRatio;
-                sx = 0; sy = (video.videoHeight - sh) / 2;
+            if (!video) {
+                DebugLog.error('CAPTURE FAILED: video ref is null');
+                DebugLog.show();
+                return;
             }
-            canvas.width = 768;
-            canvas.height = 1024;
-            const ctx = canvas.getContext('2d');
-            // Mirror the image (front camera style)
-            ctx.translate(canvas.width, 0);
-            ctx.scale(-1, 1);
-            ctx.drawImage(video, sx, sy, sw, sh, 0, 0, 768, 1024);
-            this.photo = canvas.toDataURL('image/jpeg', 0.85);
+
+            DebugLog.info('Video state at capture: videoWidth=' + video.videoWidth + ' videoHeight=' + video.videoHeight +
+                ' readyState=' + video.readyState + ' paused=' + video.paused);
+
+            if (!video.videoWidth || !video.videoHeight) {
+                DebugLog.error('CAPTURE FAILED: videoWidth or videoHeight is 0 — no camera feed');
+                DebugLog.show();
+                this.cameraError = 'Cannot capture: camera feed has no video data (videoWidth=' + video.videoWidth + ')';
+                return;
+            }
+
+            try {
+                const canvas = document.createElement('canvas');
+                const targetRatio = 2 / 3;
+                const videoRatio = video.videoWidth / video.videoHeight;
+                let sx, sy, sw, sh;
+                if (videoRatio > targetRatio) {
+                    sh = video.videoHeight; sw = sh * targetRatio;
+                    sx = (video.videoWidth - sw) / 2; sy = 0;
+                } else {
+                    sw = video.videoWidth; sh = sw / targetRatio;
+                    sx = 0; sy = (video.videoHeight - sh) / 2;
+                }
+                canvas.width = 768;
+                canvas.height = 1024;
+                const ctx = canvas.getContext('2d');
+                ctx.translate(canvas.width, 0);
+                ctx.scale(-1, 1);
+                ctx.drawImage(video, sx, sy, sw, sh, 0, 0, 768, 1024);
+                this.photo = canvas.toDataURL('image/jpeg', 0.85);
+                DebugLog.ok('Photo captured, dataURL length: ' + this.photo.length);
+            } catch (captureErr) {
+                DebugLog.error('CAPTURE EXCEPTION:', captureErr.name, captureErr.message);
+                if (captureErr.stack) DebugLog.error('Stack:', captureErr.stack);
+                DebugLog.show();
+                this.cameraError = 'Capture error: ' + captureErr.message;
+            }
         },
 
-        retake() { this.photo = null; },
+        retake() {
+            this.photo = null;
+            DebugLog.info('Photo cleared (retake)');
+        },
 
         submitPhoto() {
+            DebugLog.step('Submitting photo...');
             BosalatiSounds.click();
             const app = Alpine.closestDataStack(this.$el).find(d => d.capturedPhoto !== undefined);
             if (app) {
@@ -526,16 +771,22 @@ function cameraComponent() {
                 this.stopCamera();
                 app.screen = 'processing';
                 setTimeout(() => { app.startGeneration(); }, 500);
+            } else {
+                DebugLog.error('submitPhoto: could not find parent app data');
             }
         },
 
         stopCamera() {
+            DebugLog.info('Stopping camera...');
             if (this._countdownInterval) {
                 clearInterval(this._countdownInterval);
                 this._countdownInterval = null;
             }
             if (this.stream) {
-                this.stream.getTracks().forEach(track => track.stop());
+                this.stream.getTracks().forEach(track => {
+                    DebugLog.info('Stopping track:', track.label, 'kind:', track.kind);
+                    track.stop();
+                });
                 this.stream = null;
             }
         }
