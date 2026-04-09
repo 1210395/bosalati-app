@@ -565,167 +565,174 @@ function cameraComponent() {
 
         async initCamera() {
             DebugLog.step('=== CAMERA INIT START ===');
+            DebugLog.info('Platform: ' + navigator.userAgent);
+            DebugLog.info('Protocol: ' + window.location.protocol + ' Host: ' + window.location.host);
+            DebugLog.info('Capacitor available: ' + !!window.Capacitor);
+            DebugLog.info('Capacitor platform: ' + (window.Capacitor?.getPlatform ? window.Capacitor.getPlatform() : 'unknown'));
 
             try {
-                // Step 1: Wait for DOM
-                DebugLog.step('Step 1: Waiting 300ms for DOM...');
-                await new Promise(r => setTimeout(r, 300));
-                DebugLog.ok('Step 1: DOM wait done');
+                // Wait for DOM and WebView permission handler to be ready
+                DebugLog.step('Waiting 500ms for WebView permission handler...');
+                await new Promise(r => setTimeout(r, 500));
+                DebugLog.ok('Wait done');
 
-                // Step 2: Check APIs
-                DebugLog.step('Step 2: Checking mediaDevices API...');
-                DebugLog.info('navigator.mediaDevices exists:', !!navigator.mediaDevices);
-                DebugLog.info('getUserMedia exists:', !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia));
-                DebugLog.info('enumerateDevices exists:', !!(navigator.mediaDevices && navigator.mediaDevices.enumerateDevices));
+                // Check all camera-related APIs
+                DebugLog.step('Checking browser APIs...');
+                DebugLog.info('navigator.mediaDevices: ' + !!navigator.mediaDevices);
+                DebugLog.info('getUserMedia: ' + !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia));
+                DebugLog.info('enumerateDevices: ' + !!(navigator.mediaDevices && navigator.mediaDevices.enumerateDevices));
+                DebugLog.info('navigator.permissions: ' + !!navigator.permissions);
+
+                // Check permission state
+                if (navigator.permissions) {
+                    try {
+                        const perm = await navigator.permissions.query({ name: 'camera' });
+                        DebugLog.info('Camera permission state: ' + perm.state);
+                        perm.onchange = () => DebugLog.info('Camera permission changed to: ' + perm.state);
+                    } catch(e) {
+                        DebugLog.warn('permissions.query failed: ' + e.message);
+                    }
+                }
 
                 if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                    DebugLog.error('Step 2: FAILED — getUserMedia not available');
-                    DebugLog.info('window.location.protocol:', window.location.protocol);
-                    DebugLog.info('Is HTTPS needed? Capacitor uses:', window.location.protocol);
-                    this.cameraError = 'Camera API not available (getUserMedia missing). Protocol: ' + window.location.protocol;
+                    this.cameraError = 'Camera API not available. Protocol: ' + window.location.protocol;
+                    DebugLog.error('getUserMedia not available');
                     DebugLog.show();
                     return;
                 }
-                DebugLog.ok('Step 2: mediaDevices API available');
 
-                // Step 3: Enumerate devices first
-                DebugLog.step('Step 3: Enumerating video devices...');
+                // Enumerate devices first
                 let videoDevices = [];
                 try {
                     const allDevices = await navigator.mediaDevices.enumerateDevices();
                     videoDevices = allDevices.filter(d => d.kind === 'videoinput');
-                    DebugLog.info('Total devices found:', allDevices.length);
-                    DebugLog.info('Video devices found:', videoDevices.length);
+                    DebugLog.info('Video devices:', videoDevices.length);
                     videoDevices.forEach((d, i) => {
-                        DebugLog.info(`  Camera ${i}: "${d.label || '(no label)'}" id=${d.deviceId.substr(0, 16)}...`);
+                        DebugLog.info('  Camera ' + i + ': "' + (d.label || 'unlabeled') + '"');
                     });
-                } catch (enumErr) {
-                    DebugLog.warn('Step 3: enumerateDevices failed:', enumErr.name, enumErr.message);
+                } catch (e) {
+                    DebugLog.warn('enumerateDevices failed:', e.message);
                 }
 
-                // Step 4: Try to get camera stream
-                DebugLog.step('Step 4: Requesting camera stream...');
+                // Try to get camera — USB/external cameras first (no facingMode)
                 let stream = null;
+                this._isExternalCamera = false;
 
-                const constraintSets = [
-                    { label: 'facingMode:user + 1280x720', constraints: { video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false } },
-                    { label: 'generic 1280x720', constraints: { video: { width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false } },
-                    { label: 'video:true (minimal)', constraints: { video: true, audio: false } },
+                const attempts = [
+                    // USB/external cameras — try these FIRST
+                    { label: 'generic (USB/external)', c: { video: true, audio: false } },
+                    { label: 'generic 720p', c: { video: { width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false } },
+                    // Front camera (phones) — try last
+                    { label: 'facingMode:user', c: { video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false } },
                 ];
 
-                // If we found devices, also add deviceId-specific attempts
+                // Add device-specific attempts
                 videoDevices.forEach((d, i) => {
-                    constraintSets.push({
-                        label: `deviceId[${i}]: "${d.label || d.deviceId.substr(0, 16)}"`,
-                        constraints: { video: { deviceId: { exact: d.deviceId } }, audio: false }
+                    attempts.push({
+                        label: 'deviceId ' + i + ': ' + (d.label || d.deviceId.substring(0, 12)),
+                        c: { video: { deviceId: { exact: d.deviceId } }, audio: false }
                     });
                 });
 
-                for (let i = 0; i < constraintSets.length; i++) {
-                    const { label, constraints } = constraintSets[i];
-                    DebugLog.step(`  Attempt ${i + 1}/${constraintSets.length}: ${label}`);
+                for (const attempt of attempts) {
+                    DebugLog.step('Trying: ' + attempt.label);
                     try {
-                        stream = await navigator.mediaDevices.getUserMedia(constraints);
+                        stream = await navigator.mediaDevices.getUserMedia(attempt.c);
                         const tracks = stream.getVideoTracks();
-                        DebugLog.ok(`  SUCCESS! Got stream with ${tracks.length} video track(s)`);
-                        tracks.forEach((t, ti) => {
-                            const settings = t.getSettings ? t.getSettings() : {};
-                            DebugLog.info(`    Track ${ti}: "${t.label}" state=${t.readyState} enabled=${t.enabled}`);
-                            DebugLog.info(`    Settings: ${settings.width}x${settings.height} facing=${settings.facingMode || 'n/a'} fps=${settings.frameRate || 'n/a'}`);
-                        });
+                        DebugLog.ok('GOT STREAM: ' + tracks.length + ' track(s)');
+                        if (tracks.length > 0) {
+                            const s = tracks[0].getSettings ? tracks[0].getSettings() : {};
+                            DebugLog.info('Track: "' + tracks[0].label + '" ' + (s.width||'?') + 'x' + (s.height||'?') + ' facing=' + (s.facingMode || 'none'));
+                            // If no facingMode, it's an external camera
+                            this._isExternalCamera = !s.facingMode || s.facingMode === 'environment';
+                        }
                         break;
                     } catch (e) {
-                        DebugLog.warn(`  FAILED: ${e.name}: ${e.message}`);
+                        DebugLog.warn('Failed: ' + e.name + ': ' + e.message);
                         stream = null;
                     }
                 }
 
                 if (!stream) {
-                    DebugLog.error('Step 4: ALL camera attempts failed!');
-                    this.cameraError = 'No camera could be accessed after ' + constraintSets.length + ' attempts. Check debug log.';
+                    this.cameraError = 'No camera accessible (' + attempts.length + ' attempts failed). Tap Debug Log for details.';
+                    DebugLog.error('ALL attempts failed');
                     DebugLog.show();
                     return;
                 }
 
                 this.stream = stream;
-                DebugLog.ok('Step 4: Camera stream acquired');
 
-                // Step 5: Attach to video element
-                DebugLog.step('Step 5: Attaching stream to video element...');
+                // Attach to video element
                 const video = this.$refs.video;
-                DebugLog.info('video element exists:', !!video);
-                if (video) {
-                    DebugLog.info('video element tag:', video.tagName);
-                    DebugLog.info('video dimensions:', video.clientWidth + 'x' + video.clientHeight);
-                    DebugLog.info('video display:', window.getComputedStyle(video).display);
-                    DebugLog.info('video visibility:', window.getComputedStyle(video).visibility);
-
-                    video.srcObject = stream;
-                    DebugLog.ok('srcObject assigned');
-
-                    video.setAttribute('autoplay', '');
-                    video.setAttribute('playsinline', '');
-                    video.setAttribute('muted', '');
-
-                    // Listen for video events
-                    video.onloadedmetadata = () => {
-                        DebugLog.ok('Video metadata loaded: ' + video.videoWidth + 'x' + video.videoHeight);
-                    };
-                    video.onplaying = () => {
-                        DebugLog.ok('Video is PLAYING: ' + video.videoWidth + 'x' + video.videoHeight);
-                    };
-                    video.onerror = (e) => {
-                        DebugLog.error('Video element error:', e);
-                        DebugLog.show();
-                    };
-
-                    DebugLog.step('Step 5b: Calling video.play()...');
-                    try {
-                        await video.play();
-                        DebugLog.ok('video.play() resolved. videoWidth=' + video.videoWidth + ' videoHeight=' + video.videoHeight);
-                    } catch (playErr) {
-                        DebugLog.warn('video.play() rejected:', playErr.name, playErr.message);
-                        DebugLog.info('This may be OK if autoplay attribute handles it.');
-                    }
-                } else {
-                    DebugLog.error('Step 5: video $refs.video is NULL! Alpine template may not have rendered.');
-                    this.cameraError = 'Video element not found in DOM. Ref is null.';
+                if (!video) {
+                    this.cameraError = 'Video element not found';
+                    DebugLog.error('$refs.video is null');
                     DebugLog.show();
                     return;
                 }
 
-                this.isCameraReady = true;
-                DebugLog.ok('=== CAMERA INIT COMPLETE ===');
+                // For external cameras: don't mirror the video
+                if (this._isExternalCamera) {
+                    video.style.transform = 'none';
+                    DebugLog.info('External camera detected — mirror disabled');
+                }
 
-                // Log video state after a delay to check if it's actually rendering
-                setTimeout(() => {
-                    if (video) {
-                        DebugLog.info('Video state after 2s: readyState=' + video.readyState +
-                            ' paused=' + video.paused + ' ended=' + video.ended +
-                            ' videoWidth=' + video.videoWidth + ' videoHeight=' + video.videoHeight +
-                            ' currentTime=' + video.currentTime.toFixed(2));
-                        if (video.videoWidth === 0 || video.videoHeight === 0) {
-                            DebugLog.warn('VIDEO DIMENSIONS ARE 0 — camera feed is BLACK');
-                            DebugLog.warn('This usually means: permission denied at WebView level, or stream has no active video track');
-                            const tracks = this.stream ? this.stream.getVideoTracks() : [];
-                            tracks.forEach((t, i) => {
-                                DebugLog.info(`Track ${i} state: readyState=${t.readyState} enabled=${t.enabled} muted=${t.muted}`);
-                            });
+                video.srcObject = stream;
+                video.setAttribute('autoplay', '');
+                video.setAttribute('playsinline', '');
+                video.setAttribute('muted', '');
+
+                video.onloadedmetadata = () => {
+                    DebugLog.ok('Metadata: ' + video.videoWidth + 'x' + video.videoHeight);
+                };
+
+                try {
+                    await video.play();
+                    DebugLog.ok('play() OK: ' + video.videoWidth + 'x' + video.videoHeight);
+                } catch (e) {
+                    DebugLog.warn('play() failed: ' + e.message + ' (autoplay may handle it)');
+                }
+
+                this.isCameraReady = true;
+                DebugLog.ok('=== CAMERA READY ===');
+
+                // Monitor video state at 1s, 2s, 5s
+                const checkVideo = (delay) => {
+                    setTimeout(() => {
+                        if (!video) return;
+                        const tracks = this.stream ? this.stream.getVideoTracks() : [];
+                        const trackInfo = tracks.map((t, i) =>
+                            'track' + i + '={state:' + t.readyState + ',enabled:' + t.enabled + ',muted:' + t.muted + ',label:"' + t.label + '"}'
+                        ).join(' ');
+
+                        DebugLog.info('Video @' + delay + 'ms: readyState=' + video.readyState +
+                            ' paused=' + video.paused +
+                            ' videoW=' + video.videoWidth + ' videoH=' + video.videoHeight +
+                            ' currentTime=' + video.currentTime.toFixed(2) +
+                            ' srcObject=' + (video.srcObject ? 'SET' : 'NULL') +
+                            ' clientW=' + video.clientWidth + ' clientH=' + video.clientHeight);
+                        DebugLog.info('Tracks @' + delay + 'ms: ' + (trackInfo || 'NONE'));
+
+                        if (video.videoWidth === 0 && delay >= 2000) {
+                            DebugLog.error('!!! VIDEO IS BLACK — videoWidth=0 after ' + delay + 'ms !!!');
+                            DebugLog.error('Possible causes:');
+                            DebugLog.error('  1. WebView onPermissionRequest not called/granted');
+                            DebugLog.error('  2. Camera stream has no active video data');
+                            DebugLog.error('  3. USB camera not supported by this WebView');
+                            DebugLog.error('Native log path: ' + (window._nativeLogPath || 'check SharedPrefs'));
+                            DebugLog.show();
                         }
-                    }
-                }, 2000);
+                    }, delay);
+                };
+                checkVideo(1000);
+                checkVideo(2000);
+                checkVideo(5000);
 
             } catch (err) {
-                DebugLog.error('=== CAMERA INIT CRASHED ===');
-                DebugLog.error('Error:', err.name, err.message);
-                if (err.stack) DebugLog.error('Stack:', err.stack);
+                DebugLog.error('CAMERA CRASH: ' + err.name + ': ' + err.message);
+                if (err.stack) DebugLog.error(err.stack);
                 DebugLog.show();
-
-                if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-                    this.cameraError = 'Camera permission denied. Error: ' + err.message;
-                } else {
-                    this.cameraError = 'Camera failed: ' + err.name + ': ' + err.message;
-                }
+                this.cameraError = 'Camera error: ' + err.message;
             }
         },
 
@@ -783,8 +790,11 @@ function cameraComponent() {
                 canvas.width = 768;
                 canvas.height = 1024;
                 const ctx = canvas.getContext('2d');
-                ctx.translate(canvas.width, 0);
-                ctx.scale(-1, 1);
+                // Only mirror for front-facing cameras, not external USB cameras
+                if (!this._isExternalCamera) {
+                    ctx.translate(canvas.width, 0);
+                    ctx.scale(-1, 1);
+                }
                 ctx.drawImage(video, sx, sy, sw, sh, 0, 0, 768, 1024);
                 this.photo = canvas.toDataURL('image/jpeg', 0.85);
                 DebugLog.ok('Photo captured, dataURL length: ' + this.photo.length);

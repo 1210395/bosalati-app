@@ -115,16 +115,6 @@ public class MainActivity extends BridgeActivity {
                 webView.getSettings().setMediaPlaybackRequiresUserGesture(false);
                 log("MediaPlaybackRequiresUserGesture=false - SUCCESS");
 
-                // Inject the log into JS so it can be displayed
-                String jsLog = logBuffer.toString().replace("\\", "\\\\").replace("'", "\\'").replace("\n", "\\n");
-                webView.evaluateJavascript(
-                    "window._nativeLog = '" + jsLog + "';" +
-                    "window._hasNativeLog = true;" +
-                    "console.log('[Native] Log injected into JS');",
-                    null
-                );
-                log("Native log injected into JS - SUCCESS");
-
                 // Wrap the existing WebChromeClient for camera permission handling
                 log("Getting existing WebChromeClient...");
                 final WebChromeClient original = webView.getWebChromeClient();
@@ -134,9 +124,29 @@ public class MainActivity extends BridgeActivity {
                     log("Setting wrapped WebChromeClient...");
                     webView.setWebChromeClient(new WrappedChromeClient(original));
                     log("Wrapped WebChromeClient set - SUCCESS");
+                } else {
+                    log("WARNING: original client is null, setting standalone client");
+                    webView.setWebChromeClient(new WebChromeClient() {
+                        @Override
+                        public void onPermissionRequest(final PermissionRequest request) {
+                            log("onPermissionRequest (standalone): " + java.util.Arrays.toString(request.getResources()));
+                            runOnUiThread(() -> request.grant(request.getResources()));
+                            log("Permission GRANTED (standalone)");
+                        }
+                    });
+                    log("Standalone WebChromeClient set - SUCCESS");
                 }
 
                 log("=== WEBVIEW CONFIG COMPLETE ===");
+
+                // Inject the FULL log into JS AFTER all setup is done
+                String jsLog = logBuffer.toString().replace("\\", "\\\\").replace("'", "\\'").replace("\n", "\\n");
+                webView.evaluateJavascript(
+                    "window._nativeLog = '" + jsLog + "';" +
+                    "window._hasNativeLog = true;",
+                    null
+                );
+                log("Native log injected into JS - SUCCESS");
 
             } catch (Exception e) {
                 log("ERROR in WebView config: " + e.getClass().getName() + ": " + e.getMessage());
