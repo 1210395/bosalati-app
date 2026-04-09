@@ -5,7 +5,6 @@ import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.util.Log;
 import android.webkit.PermissionRequest;
-import android.webkit.WebChromeClient;
 import android.webkit.WebView;
 
 import androidx.annotation.NonNull;
@@ -14,105 +13,72 @@ import androidx.core.content.ContextCompat;
 
 import com.getcapacitor.BridgeActivity;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
+
 public class MainActivity extends BridgeActivity {
 
     private static final String TAG = "BosalatiCamera";
     private static final int CAMERA_PERMISSION_REQUEST_CODE = 100;
-    private PermissionRequest pendingPermissionRequest = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // Install native crash handler FIRST — writes crash log to file
+        installCrashHandler();
+
         super.onCreate(savedInstanceState);
 
-        Log.d(TAG, "onCreate: Requesting camera permission proactively");
-        requestCameraPermission();
+        nativeLog("onCreate started");
+        nativeLog("Android version: " + android.os.Build.VERSION.SDK_INT);
+        nativeLog("Device: " + android.os.Build.MANUFACTURER + " " + android.os.Build.MODEL);
 
-        // Wait a moment for the bridge to fully initialize, then configure WebView
-        // We post to the main thread to ensure the bridge/webview is ready
+        // Request camera permission proactively on startup
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
+                != PackageManager.PERMISSION_GRANTED) {
+            nativeLog("Requesting camera permission from OS...");
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.CAMERA},
+                    CAMERA_PERMISSION_REQUEST_CODE);
+        } else {
+            nativeLog("Camera permission already granted");
+        }
+
+        // Configure WebView AFTER a short delay to let Capacitor's bridge fully init
+        // IMPORTANT: Do NOT call setWebChromeClient — it replaces Capacitor's internal
+        // BridgeWebChromeClient and breaks everything. Instead, we use Capacitor's
+        // built-in permission handling via the bridge.
         getWindow().getDecorView().post(() -> {
             try {
-                WebView webView = this.bridge.getWebView();
+                WebView webView = getBridge().getWebView();
                 if (webView == null) {
-                    Log.e(TAG, "WebView is null!");
+                    nativeLog("ERROR: WebView is null after bridge init");
                     return;
                 }
 
                 // Enable WebView debugging
                 WebView.setWebContentsDebuggingEnabled(true);
-                Log.d(TAG, "WebView debugging enabled");
+                nativeLog("WebView debugging enabled");
 
-                // Get the existing WebChromeClient (Capacitor's BridgeWebChromeClient)
-                // and wrap it to add camera permission handling WITHOUT replacing it
-                final WebChromeClient existingClient = getExistingChromeClient(webView);
-
-                webView.setWebChromeClient(new WebChromeClient() {
-                    @Override
-                    public void onPermissionRequest(final PermissionRequest request) {
-                        Log.d(TAG, "onPermissionRequest called");
-                        String[] resources = request.getResources();
-                        for (String r : resources) {
-                            Log.d(TAG, "  Requested resource: " + r);
-                        }
-
-                        // Check if camera permission is already granted at OS level
-                        if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.CAMERA)
-                                == PackageManager.PERMISSION_GRANTED) {
-                            Log.d(TAG, "Camera permission already granted, granting WebView request");
-                            runOnUiThread(() -> request.grant(request.getResources()));
-                        } else {
-                            Log.d(TAG, "Camera permission NOT granted, requesting from OS");
-                            pendingPermissionRequest = request;
-                            requestCameraPermission();
-                        }
-                    }
-
-                    @Override
-                    public void onPermissionRequestCanceled(PermissionRequest request) {
-                        Log.d(TAG, "onPermissionRequestCanceled");
-                        if (pendingPermissionRequest == request) {
-                            pendingPermissionRequest = null;
-                        }
-                    }
-                });
-                Log.d(TAG, "Custom WebChromeClient set for camera permissions");
-
-                // Also ensure WebView settings allow camera
+                // Allow autoplay of media (camera streams)
                 webView.getSettings().setMediaPlaybackRequiresUserGesture(false);
-                webView.getSettings().setJavaScriptEnabled(true);
-                webView.getSettings().setDomStorageEnabled(true);
-                webView.getSettings().setAllowFileAccess(true);
-                Log.d(TAG, "WebView settings configured");
+                nativeLog("MediaPlaybackRequiresUserGesture set to false");
+
+                // Log WebView info
+                nativeLog("WebView URL: " + webView.getUrl());
+                nativeLog("WebView UA: " + webView.getSettings().getUserAgentString().substring(0, Math.min(80, webView.getSettings().getUserAgentString().length())));
+
+                nativeLog("WebView configured successfully — NOT overriding WebChromeClient");
 
             } catch (Exception e) {
-                Log.e(TAG, "Error configuring WebView: " + e.getMessage(), e);
+                nativeLog("ERROR configuring WebView: " + e.getMessage());
+                logException(e);
             }
         });
-    }
-
-    /**
-     * Try to get the existing WebChromeClient from the WebView via reflection.
-     * This is a best-effort helper — if it fails, we just proceed.
-     */
-    private WebChromeClient getExistingChromeClient(WebView webView) {
-        try {
-            java.lang.reflect.Field field = android.webkit.WebView.class.getDeclaredField("mProvider");
-            // This is fragile and not critical — we just log and move on
-        } catch (Exception e) {
-            // Expected to fail, not critical
-        }
-        return null;
-    }
-
-    private void requestCameraPermission() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
-                != PackageManager.PERMISSION_GRANTED) {
-            Log.d(TAG, "Requesting camera permission from OS...");
-            ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.CAMERA},
-                    CAMERA_PERMISSION_REQUEST_CODE);
-        } else {
-            Log.d(TAG, "Camera permission already granted at OS level");
-        }
     }
 
     @Override
@@ -121,20 +87,97 @@ public class MainActivity extends BridgeActivity {
 
         if (requestCode == CAMERA_PERMISSION_REQUEST_CODE) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                Log.d(TAG, "Camera permission GRANTED by user");
-                if (pendingPermissionRequest != null) {
-                    Log.d(TAG, "Granting pending WebView permission request");
-                    final PermissionRequest req = pendingPermissionRequest;
-                    pendingPermissionRequest = null;
-                    runOnUiThread(() -> req.grant(req.getResources()));
-                }
+                nativeLog("Camera permission GRANTED by user");
             } else {
-                Log.w(TAG, "Camera permission DENIED by user");
-                if (pendingPermissionRequest != null) {
-                    pendingPermissionRequest.deny();
-                    pendingPermissionRequest = null;
-                }
+                nativeLog("Camera permission DENIED by user");
             }
         }
+    }
+
+    // =========================================
+    // Native file-based logging
+    // =========================================
+    private void nativeLog(String message) {
+        Log.d(TAG, message);
+        writeToLogFile("NATIVE: " + message);
+    }
+
+    private void logException(Exception e) {
+        StringWriter sw = new StringWriter();
+        e.printStackTrace(new PrintWriter(sw));
+        writeToLogFile("EXCEPTION:\n" + sw.toString());
+    }
+
+    private void writeToLogFile(String message) {
+        try {
+            String ts = new SimpleDateFormat("HH:mm:ss.SSS", Locale.US).format(new Date());
+            String line = "[" + ts + "] " + message + "\n";
+
+            // Write to app's external files directory (accessible via file manager)
+            // Path: Android/data/ps.intertech.bosalati/files/bosalati_crash.log
+            File dir = getExternalFilesDir(null);
+            if (dir != null) {
+                File logFile = new File(dir, "bosalati_crash.log");
+                FileWriter fw = new FileWriter(logFile, true); // append mode
+                fw.write(line);
+                fw.flush();
+                fw.close();
+            }
+
+            // Also try writing to Downloads-accessible location
+            // Path: /sdcard/bosalati_crash.log
+            try {
+                File sdcard = android.os.Environment.getExternalStorageDirectory();
+                File downloadLog = new File(sdcard, "bosalati_crash.log");
+                FileWriter fw2 = new FileWriter(downloadLog, true);
+                fw2.write(line);
+                fw2.flush();
+                fw2.close();
+            } catch (Exception e) {
+                // May not have permission, that's OK
+            }
+
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to write log file: " + e.getMessage());
+        }
+    }
+
+    // =========================================
+    // Native crash handler — catches Java crashes and writes to file
+    // =========================================
+    private void installCrashHandler() {
+        final Thread.UncaughtExceptionHandler defaultHandler = Thread.getDefaultUncaughtExceptionHandler();
+
+        Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
+            try {
+                StringWriter sw = new StringWriter();
+                throwable.printStackTrace(new PrintWriter(sw));
+
+                String crashLog = "\n\n========== NATIVE CRASH ==========\n" +
+                        "Time: " + new Date().toString() + "\n" +
+                        "Thread: " + thread.getName() + "\n" +
+                        "Exception: " + throwable.getClass().getName() + "\n" +
+                        "Message: " + throwable.getMessage() + "\n" +
+                        "Stack:\n" + sw.toString() +
+                        "==================================\n\n";
+
+                // Write to multiple locations for maximum chance of finding it
+                writeToLogFile(crashLog);
+
+                Log.e(TAG, "NATIVE CRASH LOGGED TO FILE");
+                Log.e(TAG, crashLog);
+
+            } catch (Exception e) {
+                Log.e(TAG, "Failed to log crash: " + e.getMessage());
+            }
+
+            // Call the default handler to let Android show the crash dialog
+            if (defaultHandler != null) {
+                defaultHandler.uncaughtException(thread, throwable);
+            }
+        });
+
+        // Write a startup marker so we know the app launched
+        writeToLogFile("\n=== APP STARTED === " + new Date().toString());
     }
 }

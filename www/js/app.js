@@ -7,13 +7,52 @@ const FAL_AI_API_KEY = 'e299769e-3103-43e6-ae21-bcd1b4fb8283:dac09f32773e0be9b2b
 const FAL_AI_ENDPOINT = 'https://fal.run/fal-ai/flux-2-pro/edit';
 
 // =============================================
-// DEBUG LOGGER — visible on-screen overlay
+// DEBUG LOGGER — writes to file on Android disk + on-screen overlay
 // =============================================
 const DebugLog = (() => {
     const logs = [];
     let overlay = null;
     let logEl = null;
     let visible = false;
+    let fileWriteQueue = Promise.resolve();
+    const LOG_FILENAME = 'bosalati_debug.log';
+
+    // Write to file using Capacitor Filesystem (survives app crash)
+    function writeToFile() {
+        fileWriteQueue = fileWriteQueue.then(async () => {
+            try {
+                const Filesystem = window.Capacitor?.Plugins?.Filesystem;
+                if (!Filesystem) return;
+
+                const content = logs.map(l => l.text).join('\n') + '\n';
+
+                // Write to Documents directory (accessible via file manager)
+                await Filesystem.writeFile({
+                    path: LOG_FILENAME,
+                    data: content,
+                    directory: 'DOCUMENTS',  // maps to Capacitor Directory.Documents
+                    encoding: 'utf8',
+                    recursive: true
+                });
+
+                // Also try external/Downloads for easy access
+                try {
+                    await Filesystem.writeFile({
+                        path: 'Download/' + LOG_FILENAME,
+                        data: content,
+                        directory: 'EXTERNAL_STORAGE',
+                        encoding: 'utf8',
+                        recursive: true
+                    });
+                } catch(e2) {
+                    // External storage may not be available, that's OK
+                }
+            } catch(e) {
+                // Filesystem not ready or not available — fall back to localStorage only
+                try { localStorage.setItem('bosalati_debug_log', logs.map(l => l.text).join('\n')); } catch(e2) {}
+            }
+        }).catch(() => {});
+    }
 
     function createOverlay() {
         if (overlay) return;
@@ -26,73 +65,49 @@ const DebugLog = (() => {
             white-space:pre-wrap; word-break:break-all; line-height:1.5;
             -webkit-user-select:text; user-select:text;
         `;
-        // Close button
         const closeBtn = document.createElement('div');
-        closeBtn.style.cssText = `
-            position:sticky; top:0; background:#333; color:#ff0; padding:8px 16px;
-            text-align:center; cursor:pointer; font-size:14px; border-radius:4px;
-            margin-bottom:8px; z-index:1;
-        `;
-        closeBtn.textContent = '[ CLOSE DEBUG LOG ] — tap to close';
+        closeBtn.style.cssText = `position:sticky;top:0;background:#333;color:#ff0;padding:8px 16px;text-align:center;cursor:pointer;font-size:14px;border-radius:4px;margin-bottom:8px;z-index:1;`;
+        closeBtn.textContent = '[ CLOSE DEBUG LOG ]';
         closeBtn.onclick = () => { overlay.style.display = 'none'; visible = false; };
         overlay.appendChild(closeBtn);
 
-        // Copy button
         const copyBtn = document.createElement('div');
-        copyBtn.style.cssText = `
-            position:sticky; top:40px; background:#060; color:#fff; padding:6px 12px;
-            text-align:center; cursor:pointer; font-size:12px; border-radius:4px;
-            margin-bottom:8px;
-        `;
+        copyBtn.style.cssText = `position:sticky;top:40px;background:#060;color:#fff;padding:6px 12px;text-align:center;cursor:pointer;font-size:12px;border-radius:4px;margin-bottom:8px;`;
         copyBtn.textContent = '[ COPY ALL LOGS ]';
         copyBtn.onclick = () => {
-            const text = logs.map(l => l.text).join('\n');
-            try {
-                navigator.clipboard.writeText(text);
-                copyBtn.textContent = '[ COPIED! ]';
-                setTimeout(() => { copyBtn.textContent = '[ COPY ALL LOGS ]'; }, 1500);
-            } catch(e) {
-                // fallback: select text
-                const range = document.createRange();
-                range.selectNodeContents(logEl);
-                window.getSelection().removeAllRanges();
-                window.getSelection().addRange(range);
-            }
+            try { navigator.clipboard.writeText(logs.map(l=>l.text).join('\n')); copyBtn.textContent='[ COPIED! ]'; setTimeout(()=>{copyBtn.textContent='[ COPY ALL LOGS ]';},1500); } catch(e) {}
         };
         overlay.appendChild(copyBtn);
 
+        const pathInfo = document.createElement('div');
+        pathInfo.style.cssText = 'color:#888;font-size:10px;margin-bottom:8px;';
+        pathInfo.textContent = 'Log file: Documents/bosalati_debug.log (also try Download/bosalati_debug.log)';
+        overlay.appendChild(pathInfo);
+
         logEl = document.createElement('div');
-        logEl.id = 'debug-log-content';
         overlay.appendChild(logEl);
         document.body.appendChild(overlay);
     }
 
-    function show() {
-        createOverlay();
-        overlay.style.display = 'block';
-        visible = true;
-    }
+    function show() { createOverlay(); overlay.style.display = 'block'; visible = true; }
 
     function addEntry(level, ...args) {
-        const ts = new Date().toISOString().substr(11, 12);
+        const ts = new Date().toISOString().substring(11, 23);
         const msg = args.map(a => {
-            if (typeof a === 'object') {
-                try { return JSON.stringify(a, null, 0); }
-                catch(e) { return String(a); }
-            }
+            if (typeof a === 'object') { try { return JSON.stringify(a); } catch(e) { return String(a); } }
             return String(a);
         }).join(' ');
 
-        const colors = { INFO: '#0f0', WARN: '#ff0', ERROR: '#f44', STEP: '#0af', OK: '#4f4' };
+        const colors = { INFO:'#0f0', WARN:'#ff0', ERROR:'#f44', STEP:'#0af', OK:'#4f4' };
         const entry = { text: `[${ts}] ${level}: ${msg}`, level };
         logs.push(entry);
 
-        // Also save to localStorage for persistence
-        try {
-            localStorage.setItem('bosalati_debug_log', logs.map(l => l.text).join('\n'));
-        } catch(e) {}
+        // Write to file immediately on every entry (survives crash)
+        writeToFile();
 
-        // Update overlay if it exists
+        // Also localStorage as backup
+        try { localStorage.setItem('bosalati_debug_log', logs.map(l=>l.text).join('\n')); } catch(e) {}
+
         if (logEl) {
             const line = document.createElement('div');
             line.style.color = colors[level] || '#fff';
@@ -101,7 +116,6 @@ const DebugLog = (() => {
             logEl.scrollTop = logEl.scrollHeight;
         }
 
-        // Also console.log
         const fn = level === 'ERROR' ? console.error : level === 'WARN' ? console.warn : console.log;
         fn(`[DebugLog:${level}]`, ...args);
     }
